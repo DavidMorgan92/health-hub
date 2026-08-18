@@ -1,5 +1,6 @@
 {% load django_bootstrap5 %}
 {% load bootstrap_icons %}
+{% load ecommerce_tags %}
 
 <!DOCTYPE html>
 <html>
@@ -21,13 +22,15 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          {% active_nav request 'store' as store_active %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'ecommerce:store' %}">Store</a>
+            <a class="nav-link {{ store_active }}" href="{% url 'ecommerce:store' %}" {% if store_active %}aria-current="page"{% endif %}>Store</a>
           </li>
         </ul>
         <ul class="navbar-nav ms-auto">
+          {% active_nav request 'cart_detail' as cart_active %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'ecommerce:cart_detail' %}" alt="Cart">
+            <a class="nav-link {{ cart_active }}" href="{% url 'ecommerce:cart_detail' %}" alt="Cart" {% if cart_active %}aria-current="page"{% endif %}>
               {% bs_icon 'cart' %}
               {% if num_cart_items > 0 %}
                 <span class="badge bg-info rounded-pill">
@@ -40,15 +43,18 @@
           <li class="nav-item">
             <a class="nav-link" href="#">Profile</a>
           </li>
+          {% active_nav request 'account_logout' as logout_active %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'account_logout' %}">Logout</a>
+            <a class="nav-link {{ logout_active }}" href="{% url 'account_logout' %}" {% if logout_active %}aria-current="page"{% endif %}>Logout</a>
           </li>
           {% else %}
+          {% active_nav request 'account_login' as login_active %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+            <a class="nav-link {{ login_active }}" href="{% url 'account_login' %}" {% if login_active %}aria-current="page"{% endif %}>Login</a>
           </li>
+          {% active_nav request 'account_signup' as signup_active %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'account_signup' %}">Sign Up</a>
+            <a class="nav-link {{ signup_active }}" href="{% url 'account_signup' %}" {% if signup_active %}aria-current="page"{% endif %}>Sign Up</a>
           </li>
           {% endif %}
         </ul>
