@@ -23,8 +23,9 @@
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           {% active_nav request 'store' as store_active %}
+          {% active_nav request 'product_search' as product_search_active %}
           <li class="nav-item">
-            <a class="nav-link {{ store_active }}" href="{% url 'ecommerce:store' %}" {% if store_active %}aria-current="page"{% endif %}>Store</a>
+            <a class="nav-link {% if store_active or product_search_active %}active{% endif %}" href="{% url 'ecommerce:store' %}" {% if store_active or product_search_active %}aria-current="page"{% endif %}>Store</a>
           </li>
         </ul>
         <ul class="navbar-nav ms-auto">

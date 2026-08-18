@@ -142,6 +142,12 @@ class ProductSearchViewTests(TestCase):
         self.assertContains(response, 'Meal Planning Basics')
         self.assertContains(response, 'Meal Replacement Shake')
 
+    def test_store_nav_item_is_active_on_search_results(self):
+        response = self.client.get('/store/search/')
+
+        self.assertContains(response, 'class="nav-link active"')
+        self.assertContains(response, 'href="/store/" aria-current="page"', html=False)
+
 
 class CartTemplateFilterTests(SimpleTestCase):
     def test_multiply_filter_multiplies_decimal_and_quantity(self):
