@@ -36,6 +36,10 @@ Acceptance criteria:
   - A day or range of days can be repeated n times or indefinitely
   - A plan may contain links to products in the store that may be helpful to completing the plan
 
+## Update nutrition plans
+
+As a site owner I want to update nutrition plans so I can justify a subscription model.
+
 # Sell nutrition plans
 
 As a site owner I want to sell nutrition plans so I can justify the website's existence.
