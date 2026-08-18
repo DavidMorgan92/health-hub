@@ -159,6 +159,23 @@ class CartViewTests(TestCase):
             stock=3,
         )
 
+    def test_plan_cart_items_use_subscription_price(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 2}
+        session.save()
+
+        response = self.client.get('/store/cart/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '£19.99')
+        self.assertContains(response, '£39.98')
+
     def test_add_to_cart_returns_count_and_keeps_session_data(self):
         response = self.client.post(
             f'/store/cart/add/{self.product.id}/',

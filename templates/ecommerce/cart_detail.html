@@ -23,8 +23,13 @@
               <td>{{ item.product.name }}</td>
               <td>{{ item.product.get_product_type_display }}</td>
               <td>{{ item.quantity }}</td>
-              <td>{{ item.product.price|money }}</td>
-              <td>{{ item.product.price|multiply:item.quantity|money }}</td>
+              {% if item.product.is_plan %}
+                <td>{{ item.product.subscription_price|money }}</td>
+                <td>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
+              {% else %}
+                <td>{{ item.product.price|money }}</td>
+                <td>{{ item.product.price|multiply:item.quantity|money }}</td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
