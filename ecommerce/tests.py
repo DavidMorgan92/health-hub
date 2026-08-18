@@ -1,7 +1,50 @@
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.template import Context, Template
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
+
+from .models import Product
+
+
+class ProductTests(TestCase):
+    def test_plan_requires_monthly_subscription_price_and_cannot_be_multiplied(self):
+        plan = Product(
+            name='Beginner Exercise Plan',
+            description='A four-week plan.',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('9.99'),
+        )
+
+        plan.full_clean()
+
+        self.assertTrue(plan.is_plan)
+        self.assertFalse(plan.allows_multiple_purchases)
+
+    def test_one_off_product_requires_one_off_price(self):
+        product = Product(
+            name='Resistance Band',
+            description='A durable exercise band.',
+            product_type=Product.ProductType.EXERCISE_PRODUCT,
+            price=Decimal('12.50'),
+        )
+
+        product.full_clean()
+
+        self.assertFalse(product.is_plan)
+        self.assertTrue(product.allows_multiple_purchases)
+
+    def test_plan_cannot_have_one_off_price(self):
+        plan = Product(
+            name='Nutrition Plan',
+            description='A meal plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            price=Decimal('12.50'),
+            subscription_price=Decimal('4.99'),
+        )
+
+        with self.assertRaises(ValidationError):
+            plan.full_clean()
 
 
 class CartTemplateFilterTests(SimpleTestCase):
