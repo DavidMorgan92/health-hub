@@ -29,6 +29,11 @@
           <li class="nav-item">
             <a class="nav-link" href="{% url 'ecommerce:cart_detail' %}" alt="Cart">
               {% bs_icon 'cart' %}
+              {% if num_cart_items > 0 %}
+                <span class="badge bg-info rounded-pill">
+                  {{ num_cart_items }}
+                </span>
+              {% endif %}
             </a>
           </li>
           {% if user.is_authenticated %}
