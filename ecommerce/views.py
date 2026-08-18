@@ -1,5 +1,7 @@
-from django.shortcuts import render
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
+from .cart import get_cart, get_cart_count, get_cart_items
 from .models import Product
 
 def store(request):
@@ -60,8 +62,23 @@ def product_search(request):
     return render(request, 'ecommerce/search.html', context)
 
 def cart_detail(request):
-    """View for displaying the shopping cart details"""
-    # Assuming you have a way to get the cart items, e.g., from session or database
-    cart_items = request.session.get('cart', [])
+    cart_items = get_cart_items(request)
     context = {'cart_items': cart_items}
     return render(request, 'ecommerce/cart_detail.html', context)
+
+
+def add_to_cart(request, product_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    product = get_object_or_404(Product, pk=product_id)
+    cart = get_cart(request)
+    current_quantity = int(cart.get(str(product_id), 0))
+
+    if not product.is_plan and current_quantity >= product.stock:
+        return JsonResponse({'error': 'This product is out of stock.', 'count': get_cart_count(request)}, status=400)
+
+    cart[str(product_id)] = 1 if product.is_plan else current_quantity + 1
+    request.session['cart'] = cart
+    request.session.modified = True
+    return JsonResponse({'count': get_cart_count(request)})

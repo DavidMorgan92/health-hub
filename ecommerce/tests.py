@@ -149,6 +149,46 @@ class ProductSearchViewTests(TestCase):
         self.assertContains(response, 'href="/store/" aria-current="page"', html=False)
 
 
+class CartViewTests(TestCase):
+    def setUp(self):
+        self.product = Product.objects.create(
+            name='Resistance Band',
+            description='A durable exercise band.',
+            product_type=Product.ProductType.EXERCISE_PRODUCT,
+            price=Decimal('12.50'),
+            stock=3,
+        )
+
+    def test_add_to_cart_returns_count_and_keeps_session_data(self):
+        response = self.client.post(
+            f'/store/cart/add/{self.product.id}/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'count': 1})
+        self.assertEqual(self.client.session['cart'], {str(self.product.id): 1})
+
+    def test_adding_one_off_product_again_increments_count(self):
+        url = f'/store/cart/add/{self.product.id}/'
+
+        self.client.post(url)
+        response = self.client.post(url)
+
+        self.assertEqual(response.json(), {'count': 2})
+
+    def test_navbar_badge_uses_current_cart_count(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/search/')
+
+        self.assertContains(response, 'id="cart-count-badge"', html=False)
+        self.assertRegex(
+            response.content.decode(),
+            r'id="cart-count-badge"[^>]*>\s*1\s*</span>',
+        )
+
+
 class CartTemplateFilterTests(SimpleTestCase):
     def test_multiply_filter_multiplies_decimal_and_quantity(self):
         template = Template('{% load ecommerce_tags %}{{ value|multiply:quantity }}')
