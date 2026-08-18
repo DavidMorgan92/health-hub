@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load ecommerce_tags %}
+{% block title %}Shopping Cart - Health Hub{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <h1>Shopping Cart</h1>
+
+    {% if cart_items %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Product</th>
+            <th scope="col">Quantity</th>
+            <th scope="col">Price</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in cart_items %}
+            <tr>
+              <td>{{ item.product.name }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.product.price }}</td>
+              <td>${{ item.product.price|multiply:item.quantity }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info">
+        <p>Your cart is currently empty.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

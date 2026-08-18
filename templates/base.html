@@ -1,3 +1,6 @@
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+
 <!DOCTYPE html>
 <html>
 
@@ -23,6 +26,11 @@
           </li>
         </ul>
         <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'ecommerce:cart_detail' %}" alt="Cart">
+              {% bs_icon 'cart' %}
+            </a>
+          </li>
           {% if user.is_authenticated %}
           <li class="nav-item">
             <a class="nav-link" href="#">Profile</a>
