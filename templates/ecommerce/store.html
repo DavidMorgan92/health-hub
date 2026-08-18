@@ -5,6 +5,35 @@
 
 {% block content %}
 
+<form method="get" action="/store/search/" class="row g-2 mb-5" role="search">
+    <div class="col-12 col-md">
+        <label class="visually-hidden" for="store-search">Search products</label>
+        <input
+            type="search"
+            id="store-search"
+            name="q"
+            class="form-control"
+            placeholder="Search products"
+        >
+    </div>
+    <div class="col-12 col-md-auto">
+        <label class="visually-hidden" for="store-product-type">Product type</label>
+        <select id="store-product-type" name="product_type" class="form-select">
+            <option value="">All product types</option>
+            <option value="nutrition_plan">Nutrition plans</option>
+            <option value="exercise_plan">Exercise plans</option>
+            <option value="nutrition_product">Nutrition products</option>
+            <option value="exercise_product">Exercise products</option>
+        </select>
+    </div>
+    <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-primary w-100">
+            {% bs_icon 'search' %}
+            Search
+        </button>
+    </div>
+</form>
+
 {% for section in sections %}
     <section class="mb-5" aria-labelledby="section-{{ forloop.counter }}">
         <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-sm-between mb-3">

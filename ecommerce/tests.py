@@ -83,6 +83,15 @@ class StoreViewTests(TestCase):
                 f'/store/search/?product_type={product_type}',
             )
 
+    def test_store_includes_search_form_for_all_product_types(self):
+        response = self.client.get('/store/')
+
+        self.assertContains(response, '<form method="get" action="/store/search/"', html=False)
+        self.assertContains(response, 'name="q"', html=False)
+        self.assertContains(response, 'value="">All product types', html=False)
+        for product_type in Product.ProductType.values:
+            self.assertContains(response, f'value="{product_type}"', html=False)
+
 
 class CartTemplateFilterTests(SimpleTestCase):
     def test_multiply_filter_multiplies_decimal_and_quantity(self):
