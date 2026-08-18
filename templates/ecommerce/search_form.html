@@ -1,0 +1,31 @@
+{% load bootstrap_icons %}
+
+<form method="get" action="{% url 'ecommerce:product_search' %}" class="row g-2 mb-5" role="search">
+    <div class="col-12 col-md">
+        <label class="visually-hidden" for="product-search">Search products</label>
+        <input
+            type="search"
+            id="product-search"
+            name="q"
+            class="form-control"
+            placeholder="Search products"
+            value="{{ query|default:'' }}"
+        >
+    </div>
+    <div class="col-12 col-md-auto">
+        <label class="visually-hidden" for="product-type">Product type</label>
+        <select id="product-type" name="product_type" class="form-select">
+            <option value="">All product types</option>
+            <option value="nutrition_plan" {% if product_type == 'nutrition_plan' %}selected{% endif %}>Nutrition plans</option>
+            <option value="exercise_plan" {% if product_type == 'exercise_plan' %}selected{% endif %}>Exercise plans</option>
+            <option value="nutrition_product" {% if product_type == 'nutrition_product' %}selected{% endif %}>Nutrition products</option>
+            <option value="exercise_product" {% if product_type == 'exercise_product' %}selected{% endif %}>Exercise products</option>
+        </select>
+    </div>
+    <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-primary w-100">
+            {% bs_icon 'search' %}
+            Search
+        </button>
+    </div>
+</form>

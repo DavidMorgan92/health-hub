@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load ecommerce_tags %}
+{% load bootstrap_icons %}
+{% block title %}Search - Health Hub{% endblock %}
+
+{% block content %}
+{% include "ecommerce/search_form.html" %}
+
+<h1 class="mb-4">Search results</h1>
+
+{% if products %}
+    <div class="row row-cols-1 g-3">
+        {% for product in products %}
+            <div class="col">
+                <div class="card">
+                    <div class="row g-0">
+                        <div class="col-md-3">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" class="img-fluid rounded-start h-100 object-fit-cover" alt="{{ product.name }}">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center h-100" style="min-height: 160px;">
+                                    <span class="text-muted">No image</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <div class="card-body d-flex flex-column h-100">
+                                <h2 class="h5 card-title">{{ product.name }}</h2>
+                                <p class="card-text text-muted">{{ product.description|truncatewords:30 }}</p>
+                                <div class="mt-auto">
+                                    {% if product.is_plan %}
+                                        <strong>{{ product.subscription_price|money }}</strong> <span class="text-muted">/ month</span>
+                                        <span class="badge bg-success">Available</span>
+                                    {% else %}
+                                        <strong>{{ product.price|money }}</strong>
+                                        {% if product.stock > 0 %}
+                                            <span class="badge bg-success">In Stock</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Out of Stock</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <p class="text-muted">No products found.</p>
+{% endif %}
+{% endblock %}

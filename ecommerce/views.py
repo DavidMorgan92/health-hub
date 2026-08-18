@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.views.generic import ListView
+from django.db.models import Q
 from .models import Product
 
 def store(request):
@@ -36,6 +36,28 @@ def store(request):
     ]
     context = {'sections': sections}
     return render(request, 'ecommerce/store.html', context)
+
+
+def product_search(request):
+    query = request.GET.get('q', '').strip()
+    product_type = request.GET.get('product_type', '').strip()
+    products = Product.objects.all()
+
+    if query:
+        products = products.filter(
+            Q(name__icontains=query) | Q(description__icontains=query),
+        )
+    if product_type in Product.ProductType.values:
+        products = products.filter(product_type=product_type)
+    elif product_type:
+        products = products.none()
+
+    context = {
+        'products': products,
+        'query': query,
+        'product_type': product_type,
+    }
+    return render(request, 'ecommerce/search.html', context)
 
 def cart_detail(request):
     """View for displaying the shopping cart details"""

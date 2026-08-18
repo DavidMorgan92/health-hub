@@ -93,6 +93,56 @@ class StoreViewTests(TestCase):
             self.assertContains(response, f'value="{product_type}"', html=False)
 
 
+class ProductSearchViewTests(TestCase):
+    def setUp(self):
+        Product.objects.create(
+            name='Meal Planning Basics',
+            description='A nutrition plan for balanced meals.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('4.99'),
+        )
+        Product.objects.create(
+            name='Meal Replacement Shake',
+            description='A nutrition product for busy days.',
+            product_type=Product.ProductType.NUTRITION_PRODUCT,
+            price=Decimal('12.50'),
+            stock=2,
+        )
+        Product.objects.create(
+            name='Strength Starter',
+            description='An exercise plan for beginners.',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('8.99'),
+        )
+
+    def test_search_filters_by_query_and_product_type(self):
+        response = self.client.get(
+            '/store/search/',
+            {'q': 'meal', 'product_type': Product.ProductType.NUTRITION_PLAN},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Meal Planning Basics')
+        self.assertNotContains(response, 'Meal Replacement Shake')
+        self.assertNotContains(response, 'Strength Starter')
+        self.assertContains(response, 'value="meal"', html=False)
+        self.assertContains(response, 'value="nutrition_plan" selected', html=False)
+
+    def test_store_search_form_is_available_on_the_store_page(self):
+        response = self.client.get('/store/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<form method="get" action="/store/search/"', html=False)
+        self.assertContains(response, 'name="product_type"', html=False)
+
+    def test_search_results_are_rendered_as_a_vertical_list(self):
+        response = self.client.get('/store/search/', {'q': 'meal'})
+
+        self.assertContains(response, '<div class="row row-cols-1 g-3">', html=False)
+        self.assertContains(response, 'Meal Planning Basics')
+        self.assertContains(response, 'Meal Replacement Shake')
+
+
 class CartTemplateFilterTests(SimpleTestCase):
     def test_multiply_filter_multiplies_decimal_and_quantity(self):
         template = Template('{% load ecommerce_tags %}{{ value|multiply:quantity }}')
