@@ -11,6 +11,7 @@
         <thead>
           <tr>
             <th scope="col">Product</th>
+            <th scope="col">Product Type</th>
             <th scope="col">Quantity</th>
             <th scope="col">Price</th>
             <th scope="col">Total</th>
@@ -20,6 +21,7 @@
           {% for item in cart_items %}
             <tr>
               <td>{{ item.product.name }}</td>
+              <td>{{ item.product.get_product_type_display }}</td>
               <td>{{ item.quantity }}</td>
               <td>{{ item.product.price|money }}</td>
               <td>{{ item.product.price|multiply:item.quantity|money }}</td>
