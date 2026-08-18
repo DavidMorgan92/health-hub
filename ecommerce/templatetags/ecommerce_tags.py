@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from django import template
 
@@ -7,11 +7,22 @@ register = template.Library()
 
 @register.filter
 def multiply(value, factor):
-    """Multiply a value by a numeric factor."""
+    """Multiply a value by a numeric factor and round to 2 decimal places."""
     if value is None:
         return 0
 
-    return Decimal(str(value)) * Decimal(str(factor))
+    total = Decimal(str(value)) * Decimal(str(factor))
+    return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+@register.filter
+def money(value):
+    """Format a price value as GBP with 2 decimal places."""
+    if value is None:
+        return '£0.00'
+
+    amount = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    return f'£{amount:,.2f}'
 
 
 @register.simple_tag

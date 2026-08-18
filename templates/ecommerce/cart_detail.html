@@ -21,8 +21,8 @@
             <tr>
               <td>{{ item.product.name }}</td>
               <td>{{ item.quantity }}</td>
-              <td>${{ item.product.price }}</td>
-              <td>${{ item.product.price|multiply:item.quantity }}</td>
+              <td>{{ item.product.price|money }}</td>
+              <td>{{ item.product.price|multiply:item.quantity|money }}</td>
             </tr>
           {% endfor %}
         </tbody>
