@@ -47,6 +47,43 @@ class ProductTests(TestCase):
             plan.full_clean()
 
 
+class StoreViewTests(TestCase):
+    def test_store_displays_all_four_product_sections(self):
+        response = self.client.get('/store/')
+
+        self.assertEqual(response.status_code, 200)
+        for section_title in (
+            'Nutrition Plans',
+            'Exercise Plans',
+            'Nutrition Products',
+            'Exercise Products',
+        ):
+            self.assertContains(response, section_title)
+
+    def test_store_limits_each_section_to_five_products(self):
+        for product_number in range(6):
+            Product.objects.create(
+                name=f'Exercise Product {product_number}',
+                description='An exercise product.',
+                product_type=Product.ProductType.EXERCISE_PRODUCT,
+                price=Decimal('10.00'),
+                stock=1,
+            )
+
+        response = self.client.get('/store/')
+
+        self.assertEqual(response.content.decode().count('Exercise Product '), 5)
+
+    def test_store_links_each_section_to_filtered_search(self):
+        response = self.client.get('/store/')
+
+        for product_type in Product.ProductType.values:
+            self.assertContains(
+                response,
+                f'/store/search/?product_type={product_type}',
+            )
+
+
 class CartTemplateFilterTests(SimpleTestCase):
     def test_multiply_filter_multiplies_decimal_and_quantity(self):
         template = Template('{% load ecommerce_tags %}{{ value|multiply:quantity }}')

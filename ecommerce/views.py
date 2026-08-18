@@ -3,9 +3,38 @@ from django.views.generic import ListView
 from .models import Product
 
 def store(request):
-    """Main store page with all products"""
-    products = Product.objects.all()
-    context = {'products': products}
+    """Main store page grouped into one section for each product type."""
+    sections = [
+        {
+            'title': 'Nutrition Plans',
+            'type': Product.ProductType.NUTRITION_PLAN,
+            'products': Product.objects.filter(
+                product_type=Product.ProductType.NUTRITION_PLAN,
+            )[:5],
+        },
+        {
+            'title': 'Exercise Plans',
+            'type': Product.ProductType.EXERCISE_PLAN,
+            'products': Product.objects.filter(
+                product_type=Product.ProductType.EXERCISE_PLAN,
+            )[:5],
+        },
+        {
+            'title': 'Nutrition Products',
+            'type': Product.ProductType.NUTRITION_PRODUCT,
+            'products': Product.objects.filter(
+                product_type=Product.ProductType.NUTRITION_PRODUCT,
+            )[:5],
+        },
+        {
+            'title': 'Exercise Products',
+            'type': Product.ProductType.EXERCISE_PRODUCT,
+            'products': Product.objects.filter(
+                product_type=Product.ProductType.EXERCISE_PRODUCT,
+            )[:5],
+        },
+    ]
+    context = {'sections': sections}
     return render(request, 'ecommerce/store.html', context)
 
 def cart_detail(request):
