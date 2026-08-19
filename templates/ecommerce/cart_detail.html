@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load ecommerce_tags %}
+{% load bootstrap_icons %}
 {% block title %}Shopping Cart - Health Hub{% endblock %}
 
 {% block content %}
@@ -29,17 +30,30 @@
               <td>{{ item.product.name }}</td>
               <td>{{ item.product.get_product_type_display }}</td>
               <td>
-                {% if item.product.allows_multiple_purchases %}
-                  <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-cart-decrease aria-label="Decrease {{ item.product.name }} quantity"{% if item.quantity <= 1 %} disabled{% endif %}>-</button>
-                    <span data-cart-quantity>{{ item.quantity }}</span>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-cart-increase aria-label="Increase {{ item.product.name }} quantity">+</button>
-                  </div>
-                  <button type="button" class="btn btn-link btn-sm p-0" data-cart-remove>Remove</button>
-                {% else %}
-                  {{ item.quantity }}
-                  <button type="button" class="btn btn-link btn-sm p-0" data-cart-remove>Remove</button>
-                {% endif %}
+                <div class="input-group input-group-sm">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-cart-decrease
+                    aria-label="Decrease {{ item.product.name }} quantity"
+                    {% if item.product.is_plan or item.quantity <= 1 %}disabled{% endif %}
+                  >-</button>
+                  <span class="input-group-text" data-cart-quantity>{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary"
+                    data-cart-increase
+                    aria-label="Increase {{ item.product.name }} quantity"
+                    {% if item.product.is_plan %}disabled{% endif %}
+                  >+</button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger"
+                    data-cart-remove
+                    aria-label="Delete {{ item.product.name }} from cart"
+                    title="Delete item"
+                  >{% bs_icon 'trash' %}</button>
+                </div>
               </td>
               {% if item.product.is_plan %}
                 <td>{{ item.product.subscription_price|money }}</td>

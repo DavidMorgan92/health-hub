@@ -52,6 +52,15 @@ async function sendCartRequest(url, body = {}) {
 
 document.querySelectorAll('[data-cart-row]').forEach((row) => {
   const quantity = row.querySelector('[data-cart-quantity]');
+  const decreaseButton = row.querySelector('[data-cart-decrease]');
+  const increaseButton = row.querySelector('[data-cart-increase]');
+  const canAdjustQuantity = Boolean(row.dataset.updateUrl);
+
+  const updateQuantityControls = () => {
+    decreaseButton.disabled = !canAdjustQuantity || Number(quantity.textContent) <= 1;
+    increaseButton.disabled = !canAdjustQuantity;
+  };
+  updateQuantityControls();
 
   row.querySelector('[data-cart-remove]').addEventListener('click', async () => {
     row.querySelectorAll('button').forEach((button) => { button.disabled = true; });
@@ -69,13 +78,7 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
     }
   });
 
-  if (!quantity) return;
-
-  const decreaseButton = row.querySelector('[data-cart-decrease]');
-  const updateQuantityControls = () => {
-    decreaseButton.disabled = Number(quantity.textContent) <= 1;
-  };
-  updateQuantityControls();
+  if (!canAdjustQuantity) return;
 
   const updateQuantity = async (newQuantity) => {
     row.querySelectorAll('button').forEach((button) => { button.disabled = true; });
@@ -87,11 +90,11 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
       quantity.textContent = data.quantity;
       row.querySelector('[data-cart-total]').textContent = data.total;
       updateCartBadge(data.count);
-      updateQuantityControls();
     } catch (error) {
       window.alert(error.message);
     } finally {
       row.querySelectorAll('button').forEach((button) => { button.disabled = false; });
+      updateQuantityControls();
     }
   };
 

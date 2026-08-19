@@ -210,11 +210,19 @@ class CartViewTests(TestCase):
 
         response = self.client.get('/store/cart/')
 
-        self.assertContains(
-            response,
-            'data-cart-decrease aria-label="Decrease Resistance Band quantity" disabled',
-            html=False,
+        self.assertRegex(
+            response.content.decode(),
+            r'data-cart-decrease[\s\S]*aria-label="Decrease Resistance Band quantity"[\s\S]*disabled',
         )
+
+    def test_cart_uses_input_group_controls_for_products(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/cart/')
+
+        self.assertContains(response, 'class="input-group input-group-sm"', html=False)
+        self.assertContains(response, 'data-cart-remove', html=False)
+        self.assertContains(response, 'aria-label="Delete Resistance Band from cart"', html=False)
 
     def test_product_quantity_cannot_exceed_stock(self):
         self.client.post(f'/store/cart/add/{self.product.id}/')
@@ -248,8 +256,11 @@ class CartViewTests(TestCase):
 
         response = self.client.get('/store/cart/')
 
-        self.assertNotContains(response, 'data-cart-update-url')
+        self.assertNotContains(response, 'data-update-url')
         self.assertContains(response, 'data-remove-url')
+        self.assertContains(response, 'data-cart-decrease', html=False)
+        self.assertContains(response, 'data-cart-increase', html=False)
+        self.assertContains(response, 'aria-label="Delete Beginner Nutrition Plan from cart"', html=False)
 
     def test_plan_can_be_removed(self):
         plan = Product.objects.create(
