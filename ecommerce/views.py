@@ -10,6 +10,18 @@ from django.urls import reverse
 from .cart import get_cart, get_cart_count, get_cart_items
 from .models import Product
 
+
+def _calculate_cart_total(cart_items):
+    return sum(
+        (
+            item['product'].subscription_price
+            if item['product'].is_plan
+            else item['product'].price
+        ) * item['quantity']
+        for item in cart_items
+    ) if cart_items else Decimal('0')
+
+
 def store(request):
     """Main store page grouped into one section for each product type."""
     sections = [
@@ -69,15 +81,10 @@ def product_search(request):
 
 def cart_detail(request):
     cart_items = get_cart_items(request)
-    cart_total = sum(
-        (
-            item['product'].subscription_price
-            if item['product'].is_plan
-            else item['product'].price
-        ) * item['quantity']
-        for item in cart_items
-    ) if cart_items else Decimal('0')
-    context = {'cart_items': cart_items, 'cart_total': cart_total}
+    context = {
+        'cart_items': cart_items,
+        'cart_total': _calculate_cart_total(cart_items),
+    }
     return render(request, 'ecommerce/cart_detail.html', context)
 
 
@@ -98,7 +105,14 @@ def checkout(request):
 
         if not settings.STRIPE_SECRET_KEY:
             messages.error(request, 'Stripe payments are not configured yet.')
-            return render(request, 'ecommerce/checkout.html', {'cart_items': cart_items})
+            return render(
+                request,
+                'ecommerce/checkout.html',
+                {
+                    'cart_items': cart_items,
+                    'cart_total': _calculate_cart_total(cart_items),
+                },
+            )
 
         line_items = []
         has_plan = False
@@ -138,7 +152,14 @@ def checkout(request):
         request.session.modified = True
         return redirect(session.url)
 
-    return render(request, 'ecommerce/checkout.html', {'cart_items': cart_items})
+    return render(
+        request,
+        'ecommerce/checkout.html',
+        {
+            'cart_items': cart_items,
+            'cart_total': _calculate_cart_total(cart_items),
+        },
+    )
 
 
 def checkout_success(request):

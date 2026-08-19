@@ -331,6 +331,8 @@ class CartViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Pay securely with Stripe')
         self.assertContains(response, 'Resistance Band')
+        self.assertContains(response, 'Checkout total')
+        self.assertContains(response, '£12.50')
 
     @override_settings(STRIPE_SECRET_KEY='sk_test_example')
     @patch('ecommerce.views.stripe.checkout.Session.create')
