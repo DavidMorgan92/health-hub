@@ -33,6 +33,16 @@ function updateCartBadge(count) {
   badge.classList.toggle('d-none', count === 0);
 }
 
+function updateCartTotal() {
+  const total = [...document.querySelectorAll('[data-cart-total]')]
+    .reduce((sum, element) => {
+      const value = Number(element.textContent.replace(/[£,]/g, ''));
+      return sum + (Number.isNaN(value) ? 0 : value);
+    }, 0);
+  const totalElement = document.querySelector('[data-cart-grand-total]');
+  if (totalElement) totalElement.textContent = `£${total.toFixed(2)}`;
+}
+
 async function sendCartRequest(url, body = {}) {
   const response = await fetch(url, {
     method: 'POST',
@@ -68,6 +78,7 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
       const data = await sendCartRequest(row.dataset.removeUrl);
       row.remove();
       updateCartBadge(data.count);
+      updateCartTotal();
       if (!document.querySelector('[data-cart-row]')) {
         document.getElementById('cart-table').classList.add('d-none');
         document.getElementById('empty-cart-actions').classList.add('d-none');
@@ -91,6 +102,7 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
       quantity.textContent = data.quantity;
       row.querySelector('[data-cart-total]').textContent = data.total;
       updateCartBadge(data.count);
+      updateCartTotal();
     } catch (error) {
       window.alert(error.message);
     } finally {

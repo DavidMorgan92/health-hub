@@ -178,6 +178,22 @@ class CartViewTests(TestCase):
         self.assertContains(response, '£19.99')
         self.assertContains(response, '£39.98')
 
+    def test_cart_displays_total_for_all_items(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(self.product.id): 2, str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/cart/')
+
+        self.assertContains(response, 'Cart total')
+        self.assertContains(response, '£44.99')
+
     def test_add_to_cart_returns_count_and_keeps_session_data(self):
         response = self.client.post(
             f'/store/cart/add/{self.product.id}/',

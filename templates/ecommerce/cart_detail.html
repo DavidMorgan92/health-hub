@@ -57,7 +57,7 @@
               </td>
               {% if item.product.is_plan %}
                 <td>{{ item.product.subscription_price|money }}</td>
-                <td>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
+                <td data-cart-total>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
               {% else %}
                 <td>{{ item.product.price|money }}</td>
                 <td data-cart-total>{{ item.product.price|multiply:item.quantity|money }}</td>
@@ -65,6 +65,12 @@
             </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="4" class="text-end">Cart total</th>
+            <th data-cart-grand-total>{{ cart_total|money }}</th>
+          </tr>
+        </tfoot>
       </table>
       <div id="empty-cart-actions" class="mt-3 text-end">
         <a href="{% url 'ecommerce:checkout' %}" class="btn btn-primary">Checkout</a>

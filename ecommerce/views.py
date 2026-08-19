@@ -1,4 +1,5 @@
 import stripe
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
@@ -68,7 +69,15 @@ def product_search(request):
 
 def cart_detail(request):
     cart_items = get_cart_items(request)
-    context = {'cart_items': cart_items}
+    cart_total = sum(
+        (
+            item['product'].subscription_price
+            if item['product'].is_plan
+            else item['product'].price
+        ) * item['quantity']
+        for item in cart_items
+    ) if cart_items else Decimal('0')
+    context = {'cart_items': cart_items, 'cart_total': cart_total}
     return render(request, 'ecommerce/cart_detail.html', context)
 
 
