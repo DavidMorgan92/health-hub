@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load ecommerce_tags %}
+{% block title %}Checkout - Health Hub{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <h1>Checkout</h1>
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    <div class="list-group mb-4">
+      {% for item in cart_items %}
+        <div class="list-group-item d-flex justify-content-between">
+          <span>{{ item.product.name }}{% if item.product.is_plan %} (monthly){% endif %} x {{ item.quantity }}</span>
+          <span>{% if item.product.is_plan %}{{ item.product.subscription_price|multiply:item.quantity|money }}{% else %}{{ item.product.price|multiply:item.quantity|money }}{% endif %}</span>
+        </div>
+      {% endfor %}
+    </div>
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Pay securely with Stripe</button>
+      <a href="{% url 'ecommerce:cart_detail' %}" class="btn btn-link">Return to cart</a>
+    </form>
+  </div>
+{% endblock %}

@@ -1,6 +1,11 @@
+import stripe
+
+from django.conf import settings
+from django.contrib import messages
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Q
+from django.urls import reverse
 from .cart import get_cart, get_cart_count, get_cart_items
 from .models import Product
 
@@ -65,6 +70,90 @@ def cart_detail(request):
     cart_items = get_cart_items(request)
     context = {'cart_items': cart_items}
     return render(request, 'ecommerce/cart_detail.html', context)
+
+
+def checkout(request):
+    cart_items = get_cart_items(request)
+    if not cart_items:
+        messages.info(request, 'Add an item to your cart before checking out.')
+        return redirect('ecommerce:cart_detail')
+
+    if request.method == 'POST':
+        for item in cart_items:
+            if not item['product'].is_plan and item['quantity'] > item['product'].stock:
+                messages.error(
+                    request,
+                    f'There is not enough stock for {item["product"].name}.',
+                )
+                return redirect('ecommerce:cart_detail')
+
+        if not settings.STRIPE_SECRET_KEY:
+            messages.error(request, 'Stripe payments are not configured yet.')
+            return render(request, 'ecommerce/checkout.html', {'cart_items': cart_items})
+
+        line_items = []
+        has_plan = False
+        for item in cart_items:
+            product = item['product']
+            price = product.subscription_price if product.is_plan else product.price
+            price_data = {
+                'currency': settings.STRIPE_CURRENCY,
+                'product_data': {
+                    'name': product.name,
+                },
+                'unit_amount': int(price * 100),
+            }
+            if product.is_plan:
+                has_plan = True
+                price_data['recurring'] = {'interval': 'month'}
+
+            line_items.append({
+                'price_data': price_data,
+                'quantity': item['quantity'],
+            })
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        session_data = {
+            'mode': 'subscription' if has_plan else 'payment',
+            'line_items': line_items,
+            'success_url': request.build_absolute_uri(
+                reverse('ecommerce:checkout_success'),
+            ) + '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url': request.build_absolute_uri(reverse('ecommerce:checkout_cancel')),
+        }
+        if request.user.is_authenticated and request.user.email:
+            session_data['customer_email'] = request.user.email
+
+        session = stripe.checkout.Session.create(**session_data)
+        request.session['stripe_checkout_session_id'] = session.id
+        request.session.modified = True
+        return redirect(session.url)
+
+    return render(request, 'ecommerce/checkout.html', {'cart_items': cart_items})
+
+
+def checkout_success(request):
+    session_id = request.GET.get('session_id')
+    if (
+        not session_id
+        or session_id != request.session.get('stripe_checkout_session_id')
+        or not settings.STRIPE_SECRET_KEY
+    ):
+        return render(request, 'ecommerce/checkout_result.html', {'success': False})
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    session = stripe.checkout.Session.retrieve(session_id)
+    if session.payment_status != 'paid':
+        return render(request, 'ecommerce/checkout_result.html', {'success': False})
+
+    request.session['cart'] = {}
+    request.session.pop('stripe_checkout_session_id', None)
+    request.session.modified = True
+    return render(request, 'ecommerce/checkout_result.html', {'success': True})
+
+
+def checkout_cancel(request):
+    return render(request, 'ecommerce/checkout_result.html', {'success': False})
 
 
 def add_to_cart(request, product_id):

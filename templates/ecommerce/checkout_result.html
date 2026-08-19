@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}{% if success %}Payment complete{% else %}Payment cancelled{% endif %} - Health Hub{% endblock %}
+
+{% block content %}
+  <div class="container">
+    {% if success %}
+      <h1>Payment complete</h1>
+      <p>Thank you. Your payment was submitted successfully.</p>
+    {% else %}
+      <h1>Payment cancelled</h1>
+      <p>Your cart is still available if you would like to try again.</p>
+    {% endif %}
+    <a href="{% url 'ecommerce:store' %}" class="btn btn-primary">Return to store</a>
+  </div>
+{% endblock %}

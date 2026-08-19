@@ -3,6 +3,8 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError
 from django.template import Context, Template
 from django.test import SimpleTestCase, TestCase
+from django.test import override_settings
+from unittest.mock import patch
 
 from .models import Product
 
@@ -304,6 +306,83 @@ class CartViewTests(TestCase):
             response.content.decode(),
             r'id="cart-count-badge"[^>]*>\s*1\s*</span>',
         )
+
+    def test_checkout_page_lists_cart_items(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/checkout/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Pay securely with Stripe')
+        self.assertContains(response, 'Resistance Band')
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.create')
+    def test_product_checkout_uses_one_time_payment_mode(self, create_session):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+        create_session.return_value.url = 'https://checkout.stripe.com/session'
+        create_session.return_value.id = 'cs_test_example'
+
+        response = self.client.post('/store/checkout/')
+
+        self.assertRedirects(response, 'https://checkout.stripe.com/session', fetch_redirect_response=False)
+        self.assertEqual(create_session.call_args.kwargs['mode'], 'payment')
+        self.assertNotIn('recurring', create_session.call_args.kwargs['line_items'][0]['price_data'])
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.create')
+    def test_plan_checkout_uses_monthly_subscription_mode(self, create_session):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+        create_session.return_value.url = 'https://checkout.stripe.com/session'
+        create_session.return_value.id = 'cs_test_example'
+
+        response = self.client.post('/store/checkout/')
+
+        self.assertRedirects(response, 'https://checkout.stripe.com/session', fetch_redirect_response=False)
+        self.assertEqual(create_session.call_args.kwargs['mode'], 'subscription')
+        self.assertEqual(
+            create_session.call_args.kwargs['line_items'][0]['price_data']['recurring'],
+            {'interval': 'month'},
+        )
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.retrieve')
+    def test_successful_checkout_empties_cart(self, retrieve_session):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+        session = self.client.session
+        session['stripe_checkout_session_id'] = 'cs_test_example'
+        session.save()
+        retrieve_session.return_value.payment_status = 'paid'
+
+        response = self.client.get('/store/checkout/success/?session_id=cs_test_example')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Payment complete')
+        self.assertEqual(self.client.session['cart'], {})
+        retrieve_session.assert_called_once_with('cs_test_example')
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.retrieve')
+    def test_unpaid_checkout_keeps_cart(self, retrieve_session):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+        session = self.client.session
+        session['stripe_checkout_session_id'] = 'cs_test_example'
+        session.save()
+        retrieve_session.return_value.payment_status = 'unpaid'
+
+        response = self.client.get('/store/checkout/success/?session_id=cs_test_example')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Payment cancelled')
+        self.assertEqual(self.client.session['cart'], {str(self.product.id): 1})
 
 
 class CartTemplateFilterTests(SimpleTestCase):
