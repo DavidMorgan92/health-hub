@@ -70,6 +70,7 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
       updateCartBadge(data.count);
       if (!document.querySelector('[data-cart-row]')) {
         document.getElementById('cart-table').classList.add('d-none');
+        document.getElementById('empty-cart-actions').classList.add('d-none');
         document.getElementById('empty-cart').classList.remove('d-none');
       }
     } catch (error) {
@@ -105,3 +106,21 @@ document.querySelectorAll('[data-cart-row]').forEach((row) => {
     updateQuantity(Number(quantity.textContent) + 1);
   });
 });
+
+const emptyCartButton = document.querySelector('[data-empty-cart]');
+if (emptyCartButton) {
+  emptyCartButton.addEventListener('click', async () => {
+    emptyCartButton.disabled = true;
+    try {
+      const data = await sendCartRequest(emptyCartButton.dataset.emptyCartUrl);
+      document.querySelectorAll('[data-cart-row]').forEach((row) => row.remove());
+      document.getElementById('cart-table').classList.add('d-none');
+      document.getElementById('empty-cart-actions').classList.add('d-none');
+      document.getElementById('empty-cart').classList.remove('d-none');
+      updateCartBadge(data.count);
+    } catch (error) {
+      window.alert(error.message);
+      emptyCartButton.disabled = false;
+    }
+  });
+}

@@ -243,6 +243,22 @@ class CartViewTests(TestCase):
         self.assertEqual(response.json(), {'count': 0})
         self.assertEqual(self.client.session['cart'], {})
 
+    def test_basket_can_be_emptied(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.post('/store/cart/empty/')
+
+        self.assertEqual(response.json(), {'count': 0})
+        self.assertEqual(self.client.session['cart'], {})
+
+    def test_cart_shows_empty_basket_button_when_items_exist(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/cart/')
+
+        self.assertContains(response, 'data-empty-cart', html=False)
+        self.assertContains(response, 'Empty basket')
+
     def test_plan_has_remove_control_but_no_quantity_controls(self):
         plan = Product.objects.create(
             name='Beginner Nutrition Plan',

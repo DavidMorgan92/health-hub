@@ -126,3 +126,12 @@ def remove_from_cart(request, product_id):
     request.session['cart'] = cart
     request.session.modified = True
     return JsonResponse({'count': get_cart_count(request)})
+
+
+def empty_cart(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    request.session['cart'] = {}
+    request.session.modified = True
+    return JsonResponse({'count': 0})
