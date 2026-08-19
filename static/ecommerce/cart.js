@@ -24,3 +24,81 @@ document.querySelectorAll('[data-add-to-cart]').forEach((button) => {
     }
   });
 });
+
+const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+function updateCartBadge(count) {
+  const badge = document.getElementById('cart-count-badge');
+  badge.textContent = count;
+  badge.classList.toggle('d-none', count === 0);
+}
+
+async function sendCartRequest(url, body = {}) {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(body),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Unable to update your cart.');
+  }
+  return data;
+}
+
+document.querySelectorAll('[data-cart-row]').forEach((row) => {
+  const quantity = row.querySelector('[data-cart-quantity]');
+
+  row.querySelector('[data-cart-remove]').addEventListener('click', async () => {
+    row.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+    try {
+      const data = await sendCartRequest(row.dataset.removeUrl);
+      row.remove();
+      updateCartBadge(data.count);
+      if (!document.querySelector('[data-cart-row]')) {
+        document.getElementById('cart-table').classList.add('d-none');
+        document.getElementById('empty-cart').classList.remove('d-none');
+      }
+    } catch (error) {
+      window.alert(error.message);
+      row.querySelectorAll('button').forEach((button) => { button.disabled = false; });
+    }
+  });
+
+  if (!quantity) return;
+
+  const decreaseButton = row.querySelector('[data-cart-decrease]');
+  const updateQuantityControls = () => {
+    decreaseButton.disabled = Number(quantity.textContent) <= 1;
+  };
+  updateQuantityControls();
+
+  const updateQuantity = async (newQuantity) => {
+    row.querySelectorAll('button').forEach((button) => { button.disabled = true; });
+    try {
+      const data = await sendCartRequest(
+        row.dataset.updateUrl,
+        { quantity: newQuantity },
+      );
+      quantity.textContent = data.quantity;
+      row.querySelector('[data-cart-total]').textContent = data.total;
+      updateCartBadge(data.count);
+      updateQuantityControls();
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      row.querySelectorAll('button').forEach((button) => { button.disabled = false; });
+    }
+  };
+
+  decreaseButton.addEventListener('click', () => {
+    updateQuantity(Number(quantity.textContent) - 1);
+  });
+  row.querySelector('[data-cart-increase]').addEventListener('click', () => {
+    updateQuantity(Number(quantity.textContent) + 1);
+  });
+});

@@ -7,7 +7,7 @@
     <h1>Shopping Cart</h1>
 
     {% if cart_items %}
-      <table class="table">
+      <table id="cart-table" class="table">
         <thead>
           <tr>
             <th scope="col">Product</th>
@@ -19,25 +19,42 @@
         </thead>
         <tbody>
           {% for item in cart_items %}
-            <tr>
+            <tr
+              data-cart-row
+              data-remove-url="{% url 'ecommerce:remove_from_cart' item.product.id %}"
+              {% if item.product.allows_multiple_purchases %}
+                data-update-url="{% url 'ecommerce:update_cart_quantity' item.product.id %}"
+              {% endif %}
+            >
               <td>{{ item.product.name }}</td>
               <td>{{ item.product.get_product_type_display }}</td>
-              <td>{{ item.quantity }}</td>
+              <td>
+                {% if item.product.allows_multiple_purchases %}
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-cart-decrease aria-label="Decrease {{ item.product.name }} quantity"{% if item.quantity <= 1 %} disabled{% endif %}>-</button>
+                    <span data-cart-quantity>{{ item.quantity }}</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-cart-increase aria-label="Increase {{ item.product.name }} quantity">+</button>
+                  </div>
+                  <button type="button" class="btn btn-link btn-sm p-0" data-cart-remove>Remove</button>
+                {% else %}
+                  {{ item.quantity }}
+                  <button type="button" class="btn btn-link btn-sm p-0" data-cart-remove>Remove</button>
+                {% endif %}
+              </td>
               {% if item.product.is_plan %}
                 <td>{{ item.product.subscription_price|money }}</td>
                 <td>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
               {% else %}
                 <td>{{ item.product.price|money }}</td>
-                <td>{{ item.product.price|multiply:item.quantity|money }}</td>
+                <td data-cart-total>{{ item.product.price|multiply:item.quantity|money }}</td>
               {% endif %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
-    {% else %}
-      <div class="alert alert-info">
-        <p>Your cart is currently empty.</p>
-      </div>
     {% endif %}
+    <div id="empty-cart" class="alert alert-info{% if cart_items %} d-none{% endif %}">
+      <p>Your cart is currently empty.</p>
+    </div>
   </div>
 {% endblock %}

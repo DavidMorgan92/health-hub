@@ -82,3 +82,47 @@ def add_to_cart(request, product_id):
     request.session['cart'] = cart
     request.session.modified = True
     return JsonResponse({'count': get_cart_count(request)})
+
+
+def update_cart_quantity(request, product_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    product = get_object_or_404(Product, pk=product_id)
+    if not product.allows_multiple_purchases:
+        return JsonResponse({'error': 'This item cannot have its quantity adjusted.'}, status=400)
+
+    try:
+        quantity = int(request.POST.get('quantity', ''))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Quantity must be a whole number.'}, status=400)
+
+    if quantity < 1:
+        return JsonResponse({'error': 'Quantity must be at least one.'}, status=400)
+    if quantity > product.stock:
+        return JsonResponse({'error': 'There is not enough stock for that quantity.'}, status=400)
+
+    cart = get_cart(request)
+    if str(product_id) not in cart:
+        return JsonResponse({'error': 'This item is not in your cart.'}, status=404)
+
+    cart[str(product_id)] = quantity
+    request.session['cart'] = cart
+    request.session.modified = True
+    return JsonResponse({
+        'quantity': quantity,
+        'total': f'£{product.price * quantity:.2f}',
+        'count': get_cart_count(request),
+    })
+
+
+def remove_from_cart(request, product_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required.'}, status=405)
+
+    product = get_object_or_404(Product, pk=product_id)
+    cart = get_cart(request)
+    cart.pop(str(product_id), None)
+    request.session['cart'] = cart
+    request.session.modified = True
+    return JsonResponse({'count': get_cart_count(request)})

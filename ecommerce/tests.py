@@ -194,6 +194,79 @@ class CartViewTests(TestCase):
 
         self.assertEqual(response.json(), {'count': 2})
 
+    def test_product_quantity_can_be_updated(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.post(
+            f'/store/cart/update/{self.product.id}/',
+            {'quantity': 2},
+        )
+
+        self.assertEqual(response.json(), {'quantity': 2, 'total': '£25.00', 'count': 2})
+        self.assertEqual(self.client.session['cart'], {str(self.product.id): 2})
+
+    def test_product_decrease_control_is_disabled_at_quantity_one(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/cart/')
+
+        self.assertContains(
+            response,
+            'data-cart-decrease aria-label="Decrease Resistance Band quantity" disabled',
+            html=False,
+        )
+
+    def test_product_quantity_cannot_exceed_stock(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.post(
+            f'/store/cart/update/{self.product.id}/',
+            {'quantity': 4},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(self.client.session['cart'], {str(self.product.id): 1})
+
+    def test_product_can_be_removed(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.post(f'/store/cart/remove/{self.product.id}/')
+
+        self.assertEqual(response.json(), {'count': 0})
+        self.assertEqual(self.client.session['cart'], {})
+
+    def test_plan_has_remove_control_but_no_quantity_controls(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/cart/')
+
+        self.assertNotContains(response, 'data-cart-update-url')
+        self.assertContains(response, 'data-remove-url')
+
+    def test_plan_can_be_removed(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.post(f'/store/cart/remove/{plan.id}/')
+
+        self.assertEqual(response.json(), {'count': 0})
+        self.assertEqual(self.client.session['cart'], {})
+
     def test_navbar_badge_uses_current_cart_count(self):
         self.client.post(f'/store/cart/add/{self.product.id}/')
 
