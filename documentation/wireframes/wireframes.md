@@ -11,6 +11,8 @@
 
 <details>
   <summary>Store search page</summary>
+  <p>The search page shows the same search form as the store front page, and shows similar product cards too, with the same add-to-cart functionality. The difference is in the content shown. Here the content is user-driven based on their search parameters.</p>
+  <img src="ecommerce/store-search-page.png">
 </details>
 
 <details>
