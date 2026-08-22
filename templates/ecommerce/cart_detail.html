@@ -8,70 +8,72 @@
     <h1>Shopping Cart</h1>
 
     {% if cart_items %}
-      <table id="cart-table" class="table">
-        <thead>
-          <tr>
-            <th scope="col">Product</th>
-            <th scope="col">Product Type</th>
-            <th scope="col">Quantity</th>
-            <th scope="col">Price</th>
-            <th scope="col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in cart_items %}
-            <tr
-              data-cart-row
-              data-remove-url="{% url 'ecommerce:remove_from_cart' item.product.id %}"
-              {% if item.product.allows_multiple_purchases %}
-                data-update-url="{% url 'ecommerce:update_cart_quantity' item.product.id %}"
-              {% endif %}
-            >
-              <td>{{ item.product.name }}</td>
-              <td>{{ item.product.get_product_type_display }}</td>
-              <td>
-                <div class="input-group input-group-sm">
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    data-cart-decrease
-                    aria-label="Decrease {{ item.product.name }} quantity"
-                    {% if item.product.is_plan or item.quantity <= 1 %}disabled{% endif %}
-                  >-</button>
-                  <span class="input-group-text" data-cart-quantity>{{ item.quantity }}</span>
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary"
-                    data-cart-increase
-                    aria-label="Increase {{ item.product.name }} quantity"
-                    {% if item.product.is_plan %}disabled{% endif %}
-                  >+</button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger"
-                    data-cart-remove
-                    aria-label="Delete {{ item.product.name }} from cart"
-                    title="Delete item"
-                  >{% bs_icon 'trash' %}</button>
-                </div>
-              </td>
-              {% if item.product.is_plan %}
-                <td>{{ item.product.subscription_price|money }}</td>
-                <td data-cart-total>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
-              {% else %}
-                <td>{{ item.product.price|money }}</td>
-                <td data-cart-total>{{ item.product.price|multiply:item.quantity|money }}</td>
-              {% endif %}
+      <div class="table-responsive">
+        <table id="cart-table" class="table">
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col">Product Type</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Price</th>
+              <th scope="col">Total</th>
             </tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th colspan="4" class="text-end">Cart total</th>
-            <th data-cart-grand-total>{{ cart_total|money }}</th>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {% for item in cart_items %}
+              <tr
+                data-cart-row
+                data-remove-url="{% url 'ecommerce:remove_from_cart' item.product.id %}"
+                {% if item.product.allows_multiple_purchases %}
+                  data-update-url="{% url 'ecommerce:update_cart_quantity' item.product.id %}"
+                {% endif %}
+              >
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.product.get_product_type_display }}</td>
+                <td>
+                  <div class="input-group input-group-sm flex-nowrap">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      data-cart-decrease
+                      aria-label="Decrease {{ item.product.name }} quantity"
+                      {% if item.product.is_plan or item.quantity <= 1 %}disabled{% endif %}
+                    >-</button>
+                    <span class="input-group-text" data-cart-quantity>{{ item.quantity }}</span>
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary"
+                      data-cart-increase
+                      aria-label="Increase {{ item.product.name }} quantity"
+                      {% if item.product.is_plan %}disabled{% endif %}
+                    >+</button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger"
+                      data-cart-remove
+                      aria-label="Delete {{ item.product.name }} from cart"
+                      title="Delete item"
+                    >{% bs_icon 'trash' %}</button>
+                  </div>
+                </td>
+                {% if item.product.is_plan %}
+                  <td>{{ item.product.subscription_price|money }}</td>
+                  <td data-cart-total>{{ item.product.subscription_price|multiply:item.quantity|money }}</td>
+                {% else %}
+                  <td>{{ item.product.price|money }}</td>
+                  <td data-cart-total>{{ item.product.price|multiply:item.quantity|money }}</td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="4" class="text-end">Cart total</th>
+              <th data-cart-grand-total>{{ cart_total|money }}</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
       <div id="empty-cart-actions" class="mt-3 text-end">
         <a href="{% url 'ecommerce:checkout' %}" class="btn btn-primary">Checkout</a>
         <button
