@@ -39,15 +39,17 @@
                                             <span class="badge bg-danger">Out of Stock</span>
                                         {% endif %}
                                     {% endif %}
-                                    {% if product.is_plan or product.stock > 0 %}
-                                        <button
-                                            type="button"
-                                            class="btn btn-primary btn-sm mt-3"
-                                            data-add-to-cart="{% url 'ecommerce:add_to_cart' product.id %}"
-                                        >Add to Cart</button>
-                                    {% else %}
-                                        <button type="button" class="btn btn-secondary btn-sm mt-3" disabled>Out of Stock</button>
-                                    {% endif %}
+                                    <div>
+                                        {% if product.is_plan or product.stock > 0 %}
+                                            <button
+                                                type="button"
+                                                class="btn btn-primary btn-sm mt-3"
+                                                data-add-to-cart="{% url 'ecommerce:add_to_cart' product.id %}"
+                                            >Add to Cart</button>
+                                        {% else %}
+                                            <button type="button" class="btn btn-secondary btn-sm mt-3" disabled>Out of Stock</button>
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
                         </div>
