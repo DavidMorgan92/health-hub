@@ -238,7 +238,7 @@ class CartViewTests(TestCase):
 
         response = self.client.get('/store/cart/')
 
-        self.assertContains(response, 'class="input-group input-group-sm"', html=False)
+        self.assertContains(response, 'class="input-group input-group-sm flex-nowrap"', html=False)
         self.assertContains(response, 'data-cart-remove', html=False)
         self.assertContains(response, 'aria-label="Delete Resistance Band from cart"', html=False)
 
