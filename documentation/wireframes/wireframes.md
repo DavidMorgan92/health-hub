@@ -30,6 +30,10 @@
 
 <details>
   <summary>Checkout</summary>
+  <p>The checkout shows a simple list of the items and prices about to be purchased, and a total.</p>
+  <p>The user is presented with a button to continue to pay with Stripe where they will be redirected to a Stripe page, and a link to go back to the cart to make adjustments.</p>
+  <p>If the user navigates to the checkout page and there are no items in the cart, the user will be redirected to the cart page.</p>
+  <img src="ecommerce/checkout.png">
 </details>
 
 <details>
