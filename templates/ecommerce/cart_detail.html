@@ -84,8 +84,8 @@
         >{% bs_icon 'trash' %} Empty basket</button>
       </div>
     {% endif %}
-    <div id="empty-cart" class="alert alert-info{% if cart_items %} d-none{% endif %}">
-      <p>Your cart is currently empty.</p>
+    <div id="empty-cart" class="alert alert-info{% if cart_items %} d-none{% endif %} mt-4">
+      <span>Your cart is currently empty.</span>
     </div>
   </div>
 {% endblock %}

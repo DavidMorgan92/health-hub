@@ -24,6 +24,8 @@
   <p>For product type products, they have a minimum quantity of 1, and the max quantity should not be allowed to go higher than the amount in stock.</p>
   <p>The total cost is displayed, and the user is presented with an option to go to the checkout.</p>
   <img src="ecommerce/cart.png">
+  <p>If the cart is empty a simple info alert will be shown.</p>
+  <img src="ecommerce/cart-empty.png">
 </details>
 
 <details>
