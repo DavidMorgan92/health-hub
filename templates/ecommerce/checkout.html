@@ -5,11 +5,6 @@
 {% block content %}
   <div class="container">
     <h1>Checkout</h1>
-    {% if messages %}
-      {% for message in messages %}
-        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
-      {% endfor %}
-    {% endif %}
     <div class="list-group mb-4">
       {% for item in cart_items %}
         <div class="list-group-item d-flex justify-content-between">

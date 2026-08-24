@@ -72,6 +72,12 @@
   </nav>
 
   <div class="container mt-5">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}" role="alert">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
     {% block content %}
     <h1>Welcome to Health Hub</h1>
     <p class="lead">Your health management platform</p>
