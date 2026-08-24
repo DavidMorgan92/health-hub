@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django_bootstrap5',
     'django_bootstrap_icons',
     'ecommerce',
+    'plans',
 ]
 
 MIDDLEWARE = [
