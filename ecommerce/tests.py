@@ -334,6 +334,34 @@ class CartViewTests(TestCase):
         self.assertContains(response, 'Checkout total')
         self.assertContains(response, '£12.50')
 
+    def test_empty_checkout_message_does_not_leak_into_later_checkout(self):
+        response = self.client.get('/store/checkout/')
+
+        self.assertRedirects(response, '/store/cart/', fetch_redirect_response=False)
+        cart_response = self.client.get('/store/cart/')
+        self.assertContains(cart_response, 'Add an item to your cart before checking out.')
+
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+        self.client.get('/store/cart/')
+        checkout_response = self.client.get('/store/checkout/')
+
+        self.assertNotContains(
+            checkout_response,
+            'Add an item to your cart before checking out.',
+        )
+
+    def test_checkout_stock_error_uses_bootstrap_danger_class(self):
+        session = self.client.session
+        session['cart'] = {str(self.product.id): 1}
+        session.save()
+        self.product.stock = 0
+        self.product.save()
+
+        response = self.client.post('/store/checkout/', follow=True)
+
+        self.assertContains(response, 'alert-danger')
+        self.assertNotContains(response, 'alert-error')
+
     @override_settings(STRIPE_SECRET_KEY='sk_test_example')
     @patch('ecommerce.views.stripe.checkout.Session.create')
     def test_product_checkout_uses_one_time_payment_mode(self, create_session):
