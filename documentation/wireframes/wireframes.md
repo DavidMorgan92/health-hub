@@ -19,6 +19,11 @@
 
 <details>
   <summary>Cart</summary>
+  <p>The cart page shows the content of the cart, and allows for adjusting quantity or removing any items.</p>
+  <p>Plan type products can only have a quantity of 1, so the - and + buttons are disabled.</p>
+  <p>For product type products, they have a minimum quantity of 1, and the max quantity should not be allowed to go higher than the amount in stock.</p>
+  <p>The total cost is displayed, and the user is presented with an option to go to the checkout.</p>
+  <img src="ecommerce/cart.png">
 </details>
 
 <details>
