@@ -37,9 +37,13 @@
 </details>
 
 <details>
-  <summary>Payment success</summary>
+  <summary>Payment complete</summary>
+  <p>On successfuly payment the user will be shown a thank you message and a link to continue shopping in the store.</p>
+  <img src="ecommerce/payment-complete.png">
 </details>
 
 <details>
-  <summary>Payment error</summary>
+  <summary>Payment cancelled</summary>
+  <p>On a cancelled payment the user will be shown a message informing them their cart is still ready to be purchased again, and a link to continue shopping in the store.</p>
+  <img src="ecommerce/payment-cancelled.png">
 </details>
