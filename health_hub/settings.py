@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_bootstrap_icons',
     'ecommerce',
     'plans',
+    'subscriptions',
 ]
 
 MIDDLEWARE = [
@@ -154,4 +155,5 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 SITE_ID = 1
 
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 STRIPE_CURRENCY = 'gbp'

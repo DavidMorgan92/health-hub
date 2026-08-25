@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Q
 from django.urls import reverse
+from subscriptions.services import record_checkout_session
 from .cart import get_cart, get_cart_count, get_cart_items
 from .models import Product
 
@@ -161,6 +162,21 @@ def checkout(request):
             ) + '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url': request.build_absolute_uri(reverse('ecommerce:checkout_cancel')),
         }
+        if has_plan:
+            plan_product_ids = ','.join(
+                str(item['product'].id)
+                for item in cart_items
+                if item['product'].is_plan
+            )
+            subscription_metadata = {
+                'user_id': str(request.user.id),
+                'plan_product_ids': plan_product_ids,
+            }
+            session_data.update({
+                'client_reference_id': str(request.user.id),
+                'metadata': subscription_metadata,
+                'subscription_data': {'metadata': subscription_metadata},
+            })
         if request.user.is_authenticated and request.user.email:
             session_data['customer_email'] = request.user.email
 
@@ -192,6 +208,9 @@ def checkout_success(request):
     session = stripe.checkout.Session.retrieve(session_id)
     if session.payment_status != 'paid':
         return render(request, 'ecommerce/checkout_result.html', {'success': False})
+
+    if isinstance(session.get('subscription'), str):
+        record_checkout_session(session)
 
     request.session['cart'] = {}
     request.session.pop('stripe_checkout_session_id', None)
