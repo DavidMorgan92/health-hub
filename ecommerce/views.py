@@ -88,11 +88,28 @@ def cart_detail(request):
     return render(request, 'ecommerce/cart_detail.html', context)
 
 
+def checkout_auth(request):
+    cart_items = get_cart_items(request)
+    if not any(item['product'].is_plan for item in cart_items):
+        return redirect('ecommerce:checkout')
+    if request.user.is_authenticated:
+        return redirect('ecommerce:checkout')
+
+    checkout_url = reverse('ecommerce:checkout')
+    return render(
+        request,
+        'ecommerce/checkout_auth.html',
+        {'checkout_url': checkout_url},
+    )
+
+
 def checkout(request):
     cart_items = get_cart_items(request)
     if not cart_items:
         messages.info(request, 'Add an item to your cart before checking out.')
         return redirect('ecommerce:cart_detail')
+    if any(item['product'].is_plan for item in cart_items) and not request.user.is_authenticated:
+        return redirect('ecommerce:checkout_auth')
 
     if request.method == 'POST':
         for item in cart_items:

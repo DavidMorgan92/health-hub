@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Account Required - Health Hub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1>Account required</h1>
+    <p>Sign in or create an account to continue with your plan subscription.</p>
+    <a class="btn btn-primary" href="{% url 'account_login' %}?next={{ checkout_url|urlencode }}">Sign in</a>
+    <a class="btn btn-outline-primary" href="{% url 'account_signup' %}?next={{ checkout_url|urlencode }}">Create an account</a>
+    <a class="btn btn-link" href="{% url 'ecommerce:cart_detail' %}">Return to cart</a>
+  </div>
+</div>
+{% endblock %}

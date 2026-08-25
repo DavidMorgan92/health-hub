@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.template import Context, Template
 from django.test import SimpleTestCase, TestCase
@@ -334,6 +335,59 @@ class CartViewTests(TestCase):
         self.assertContains(response, 'Checkout total')
         self.assertContains(response, '£12.50')
 
+    def test_anonymous_plan_checkout_requires_an_account_step(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/checkout/')
+
+        self.assertRedirects(response, '/store/checkout/account/')
+
+    def test_checkout_account_step_links_to_auth_and_preserves_checkout(self):
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/checkout/account/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['checkout_url'], '/store/checkout/')
+        self.assertContains(response, 'href="/accounts/login/?next=')
+        self.assertContains(response, 'href="/accounts/signup/?next=')
+
+    def test_authenticated_plan_checkout_can_reach_checkout(self):
+        user = get_user_model().objects.create_user(
+            username='plan-buyer',
+            password='test-password',
+        )
+        self.client.force_login(user)
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/checkout/')
+
+        self.assertEqual(response.status_code, 200)
+
     def test_empty_checkout_message_does_not_leak_into_later_checkout(self):
         response = self.client.get('/store/checkout/')
 
@@ -378,6 +432,11 @@ class CartViewTests(TestCase):
     @override_settings(STRIPE_SECRET_KEY='sk_test_example')
     @patch('ecommerce.views.stripe.checkout.Session.create')
     def test_plan_checkout_uses_monthly_subscription_mode(self, create_session):
+        user = get_user_model().objects.create_user(
+            username='plan-buyer',
+            password='test-password',
+        )
+        self.client.force_login(user)
         plan = Product.objects.create(
             name='Beginner Nutrition Plan',
             description='A four-week nutrition plan.',
