@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.test import TestCase
 
 from ecommerce.models import Product
@@ -75,6 +76,35 @@ class PlanModelTests(TestCase):
 
         with self.assertRaises(ValidationError):
             Plan(product=product).full_clean()
+
+
+class SeedPlansCommandTests(TestCase):
+    def test_seed_creates_a_plan_for_every_seeded_plan_product(self):
+        call_command('seed_products')
+
+        call_command('seed_plans')
+
+        plan_products = Product.objects.filter(
+            product_type__in=[
+                Product.ProductType.NUTRITION_PLAN,
+                Product.ProductType.EXERCISE_PLAN,
+            ],
+        )
+        self.assertEqual(Plan.objects.count(), plan_products.count())
+        self.assertEqual(PlanEvent.objects.count(), 60)
+        self.assertGreater(
+            PlanEvent.objects.filter(linked_products__isnull=False).distinct().count(),
+            0,
+        )
+
+    def test_seed_is_idempotent(self):
+        call_command('seed_products')
+        call_command('seed_plans')
+
+        call_command('seed_plans')
+
+        self.assertEqual(Plan.objects.count(), 20)
+        self.assertEqual(PlanEvent.objects.count(), 60)
 
 
 class PlansHomeViewTests(TestCase):
