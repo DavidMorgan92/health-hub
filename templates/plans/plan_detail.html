@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.product.name }} - Plans{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>{{ plan.product.name }}</h1>
+    <a href="{% url 'plans:plans_home' %}" class="btn btn-outline-secondary">Back to plans</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h2 class="h5">Plan details</h2>
+      <p class="mb-0"><strong>Type:</strong> {{ plan.product.get_product_type_display }}</p>
+      <p class="mb-0"><strong>Description:</strong> {{ plan.product.description }}</p>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <h2 class="h5">Subscriptions</h2>
+
+    {% if subscriptions %}
+      <ul class="list-group">
+        {% for entry in subscriptions %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>Subscription {{ entry.subscription.stripe_subscription_id }}</span>
+            <span class="{{ entry.badge_class }}">{{ entry.status_label }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted mb-0">This plan is not currently associated with any subscriptions for your account.</p>
+    {% endif %}
+  </div>
+{% endblock %}

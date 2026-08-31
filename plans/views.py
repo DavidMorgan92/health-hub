@@ -1,7 +1,8 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 
 from ecommerce.models import Product
+from plans.models import Plan
 from subscriptions.models import SubscriptionPlan
 
 
@@ -52,3 +53,28 @@ def home(request):
     ]
 
     return render(request, 'plans/home.html', {'plan_sections': plan_sections})
+
+
+@login_required
+def detail(request, pk):
+    plan = get_object_or_404(
+        Plan.objects.select_related('product').prefetch_related('subscriptions__subscription'),
+        pk=pk,
+    )
+
+    user_subscription_plans = plan.subscriptions.filter(subscription__user=request.user)
+    subscriptions = []
+    for subscription_plan in user_subscription_plans.select_related('subscription'):
+        subscription = subscription_plan.subscription
+        subscriptions.append({
+            'subscription': subscription,
+            'status': subscription.status,
+            'status_label': subscription.get_status_display(),
+            'badge_class': _subscription_badge_class(subscription.status),
+        })
+
+    return render(
+        request,
+        'plans/plan_detail.html',
+        {'plan': plan, 'subscriptions': subscriptions},
+    )

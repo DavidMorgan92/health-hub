@@ -238,3 +238,68 @@ class PlansHomeViewTests(TestCase):
         self.assertContains(response, 'class="badge bg-warning text-dark"')
         self.assertContains(response, 'class="badge bg-secondary"')
         self.assertNotContains(response, 'Other Exercise')
+
+    def test_authenticated_user_can_view_plan_detail_with_subscription_statuses(self):
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_detail_active',
+            stripe_customer_id='cus_detail_active',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_detail_active',
+        )
+
+        past_due_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_detail_past_due',
+            stripe_customer_id='cus_detail_past_due',
+            status=Subscription.Status.PAST_DUE,
+            current_period_end=timezone.now() + timedelta(days=5),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=past_due_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_detail_past_due',
+        )
+
+        other_user = get_user_model().objects.create_user(
+            username='other-detail-plan-user',
+            password='test-password',
+        )
+        other_subscription = Subscription.objects.create(
+            user=other_user,
+            stripe_subscription_id='sub_detail_other',
+            stripe_customer_id='cus_detail_other',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=other_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_detail_other',
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(f'/plans/{nutrition_plan.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Balanced Nutrition')
+        self.assertContains(response, 'Subscriptions')
+        self.assertContains(response, 'sub_detail_active')
+        self.assertContains(response, 'sub_detail_past_due')
+        self.assertNotContains(response, 'sub_detail_other')
+        self.assertContains(response, 'class="badge bg-success"')
+        self.assertContains(response, 'class="badge bg-warning text-dark"')
