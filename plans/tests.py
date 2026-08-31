@@ -396,3 +396,36 @@ class PlansHomeViewTests(TestCase):
         self.assertNotContains(response, 'sub_detail_other')
         self.assertContains(response, 'class="badge bg-success"')
         self.assertContains(response, 'class="badge bg-warning text-dark"')
+        self.assertContains(response, 'data-plan-calendar')
+
+    def test_plan_detail_hides_calendar_without_active_subscription(self):
+        plan_product = Product.objects.create(
+            name='Inactive Plan',
+            description='An inactive plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        plan = Plan.objects.create(product=plan_product)
+        subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_detail_canceled',
+            stripe_customer_id='cus_detail_canceled',
+            status=Subscription.Status.CANCELED,
+            current_period_end=timezone.now() - timedelta(days=1),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=subscription,
+            plan=plan,
+            stripe_subscription_item_id='si_detail_canceled',
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(f'/plans/{plan.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'You must re-activate a subscription to regain access to this plan.',
+        )
+        self.assertNotContains(response, 'data-plan-calendar')

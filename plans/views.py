@@ -84,8 +84,10 @@ def detail(request, pk):
 
     user_subscription_plans = plan.subscriptions.filter(subscription__user=request.user)
     subscriptions = []
+    has_plan_access = False
     for subscription_plan in user_subscription_plans.select_related('subscription'):
         subscription = subscription_plan.subscription
+        has_plan_access = has_plan_access or subscription.grants_access
         subscriptions.append({
             'subscription': subscription,
             'status': subscription.status,
@@ -96,5 +98,9 @@ def detail(request, pk):
     return render(
         request,
         'plans/plan_detail.html',
-        {'plan': plan, 'subscriptions': subscriptions},
+        {
+            'plan': plan,
+            'subscriptions': subscriptions,
+            'has_plan_access': has_plan_access,
+        },
     )
