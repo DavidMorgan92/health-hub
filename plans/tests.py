@@ -140,7 +140,7 @@ class PlansHomeViewTests(TestCase):
         self.assertContains(response, 'href="/plans/"')
         self.assertContains(response, 'class="nav-link active"')
 
-    def test_authenticated_user_sees_grouped_subscription_plans_with_status_badges(self):
+    def test_authenticated_user_sees_unique_grouped_plans_with_active_status_priority(self):
         other_user = get_user_model().objects.create_user(
             username='other-plan-user',
             password='test-password',
@@ -162,11 +162,19 @@ class PlansHomeViewTests(TestCase):
         )
         exercise_plan = Plan.objects.create(product=exercise_plan_product)
 
+        inactive_plan_product = Product.objects.create(
+            name='Inactive Recovery',
+            description='An inactive exercise plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('15.99'),
+        )
+        inactive_plan = Plan.objects.create(product=inactive_plan_product)
+
         other_exercise_plan_product = Product.objects.create(
             name='Other Exercise',
             description='Another exercise plan',
             product_type=Product.ProductType.EXERCISE_PLAN,
-            subscription_price=Decimal('15.99'),
+            subscription_price=Decimal('12.99'),
         )
         other_exercise_plan = Plan.objects.create(product=other_exercise_plan_product)
 
@@ -196,7 +204,7 @@ class PlansHomeViewTests(TestCase):
             stripe_subscription_item_id='si_past_due_exercise',
         )
 
-        canceled_subscription = Subscription.objects.create(
+        inactive_subscription = Subscription.objects.create(
             user=self.user,
             stripe_subscription_id='sub_canceled',
             stripe_customer_id='cus_canceled',
@@ -204,9 +212,35 @@ class PlansHomeViewTests(TestCase):
             current_period_end=timezone.now() - timedelta(days=1),
         )
         SubscriptionPlan.objects.create(
-            subscription=canceled_subscription,
+            subscription=inactive_subscription,
             plan=exercise_plan,
             stripe_subscription_item_id='si_canceled_exercise',
+        )
+
+        canceled_only_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_inactive_only',
+            stripe_customer_id='cus_inactive_only',
+            status=Subscription.Status.CANCELED,
+            current_period_end=timezone.now() - timedelta(days=5),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=canceled_only_subscription,
+            plan=inactive_plan,
+            stripe_subscription_item_id='si_inactive_only',
+        )
+
+        active_subscription_for_same_plan = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_active_same_plan',
+            stripe_customer_id='cus_active_same_plan',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription_for_same_plan,
+            plan=exercise_plan,
+            stripe_subscription_item_id='si_active_same_plan',
         )
 
         other_subscription = Subscription.objects.create(
@@ -225,18 +259,19 @@ class PlansHomeViewTests(TestCase):
         self.client.force_login(self.user)
 
         response = self.client.get('/plans/')
+        response_html = response.content.decode()
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Nutrition plans')
         self.assertContains(response, 'Exercise plans')
         self.assertContains(response, 'Balanced Nutrition')
         self.assertContains(response, 'Strength Builder')
+        self.assertContains(response, 'Inactive Recovery')
         self.assertContains(response, 'Active')
-        self.assertContains(response, 'Past due')
-        self.assertContains(response, 'Canceled')
+        self.assertContains(response, 'Inactive')
         self.assertContains(response, 'class="badge bg-success"')
-        self.assertContains(response, 'class="badge bg-warning text-dark"')
         self.assertContains(response, 'class="badge bg-secondary"')
+        self.assertEqual(response_html.count('Strength Builder'), 1)
         self.assertNotContains(response, 'Other Exercise')
 
     def test_authenticated_user_can_view_plan_detail_with_subscription_statuses(self):

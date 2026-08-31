@@ -15,6 +15,21 @@ def _subscription_badge_class(status):
     return badge_classes.get(status, 'badge bg-secondary')
 
 
+def _plan_status_from_subscriptions(plan_subscriptions):
+    if any(sub.status == 'active' for sub in plan_subscriptions):
+        return {
+            'status': 'active',
+            'status_label': 'Active',
+            'badge_class': 'badge bg-success',
+        }
+
+    return {
+        'status': 'inactive',
+        'status_label': 'Inactive',
+        'badge_class': 'badge bg-secondary',
+    }
+
+
 @login_required
 def home(request):
     subscription_plans = (
@@ -24,8 +39,8 @@ def home(request):
     )
 
     grouped_plans = {
-        Product.ProductType.NUTRITION_PLAN: [],
-        Product.ProductType.EXERCISE_PLAN: [],
+        Product.ProductType.NUTRITION_PLAN: {},
+        Product.ProductType.EXERCISE_PLAN: {},
     }
 
     for subscription_plan in subscription_plans:
@@ -33,24 +48,29 @@ def home(request):
         if product_type not in grouped_plans:
             continue
 
-        grouped_plans[product_type].append({
-            'plan': subscription_plan.plan,
-            'subscription': subscription_plan.subscription,
-            'status': subscription_plan.subscription.status,
-            'status_label': subscription_plan.subscription.get_status_display(),
-            'badge_class': _subscription_badge_class(subscription_plan.subscription.status),
+        plan = subscription_plan.plan
+        grouped_plans[product_type].setdefault(plan.id, {
+            'plan': plan,
+            'subscriptions': [],
         })
+        grouped_plans[product_type][plan.id]['subscriptions'].append(subscription_plan.subscription)
 
-    plan_sections = [
-        {
-            'title': 'Nutrition plans',
-            'plans': grouped_plans[Product.ProductType.NUTRITION_PLAN],
-        },
-        {
-            'title': 'Exercise plans',
-            'plans': grouped_plans[Product.ProductType.EXERCISE_PLAN],
-        },
-    ]
+    plan_sections = []
+    for product_type, plans_by_id in grouped_plans.items():
+        plans = []
+        for plan_data in plans_by_id.values():
+            status_data = _plan_status_from_subscriptions(plan_data['subscriptions'])
+            plans.append({
+                'plan': plan_data['plan'],
+                'status': status_data['status'],
+                'status_label': status_data['status_label'],
+                'badge_class': status_data['badge_class'],
+            })
+
+        plan_sections.append({
+            'title': 'Nutrition plans' if product_type == Product.ProductType.NUTRITION_PLAN else 'Exercise plans',
+            'plans': sorted(plans, key=lambda item: item['plan'].product.name),
+        })
 
     return render(request, 'plans/home.html', {'plan_sections': plan_sections})
 
