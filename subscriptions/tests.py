@@ -126,3 +126,24 @@ class StripeWebhookTests(TestCase):
         subscription.refresh_from_db()
         self.assertFalse(subscription.grants_access)
 
+    def test_checkout_session_does_not_overwrite_active_subscription(self):
+        period_end = timezone.now() + timedelta(days=30)
+        subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_checkout',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=period_end,
+        )
+
+        from .services import record_checkout_session
+
+        record_checkout_session({
+            'id': 'cs_checkout',
+            'subscription': 'sub_checkout',
+            'customer': 'cus_checkout',
+            'client_reference_id': str(self.user.id),
+        })
+
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.status, Subscription.Status.ACTIVE)
+

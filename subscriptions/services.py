@@ -41,7 +41,6 @@ def record_checkout_session(session):
             'user_id': user_id,
             'stripe_customer_id': session.get('customer', ''),
             'checkout_session_id': session.get('id'),
-            'status': Subscription.Status.CANCELED,
         },
     )
     return subscription
