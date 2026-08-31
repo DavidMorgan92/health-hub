@@ -190,6 +190,37 @@ class PlansHomeViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<h1>Plans</h1>', html=False)
 
+    def test_authenticated_user_sees_plan_calendar_on_home_page(self):
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_home_calendar_active',
+            stripe_customer_id='cus_home_calendar_active',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_home_calendar_active',
+        )
+        UserPlanSelection.objects.create(user=self.user, plan=nutrition_plan, is_selected=True)
+
+        self.client.force_login(self.user)
+
+        response = self.client.get('/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Selected plan calendar')
+        self.assertContains(response, 'data-plan-calendar')
+
     def test_authenticated_user_sees_plans_nav_item(self):
         self.client.force_login(self.user)
 

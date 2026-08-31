@@ -1,7 +1,15 @@
 {% extends "base.html" %}
+{% load plan_calendar %}
 {% block title %}Home - Health Hub{% endblock %}
 
 {% block content %}
 <h1>Welcome to Health Hub</h1>
 <p class="lead">Your health management platform</p>
+
+{% if user.is_authenticated %}
+  <div class="mt-5">
+    <h2>Selected plan calendar</h2>
+    {% plan_calendar selected_plans %}
+  </div>
+{% endif %}
 {% endblock %}
