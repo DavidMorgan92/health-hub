@@ -1,9 +1,14 @@
+from datetime import timedelta
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.test import TestCase
+from django.utils import timezone
 
 from ecommerce.models import Product
+from subscriptions.models import Subscription, SubscriptionPlan
 from .models import Plan, PlanEvent
 
 
@@ -134,3 +139,102 @@ class PlansHomeViewTests(TestCase):
 
         self.assertContains(response, 'href="/plans/"')
         self.assertContains(response, 'class="nav-link active"')
+
+    def test_authenticated_user_sees_grouped_subscription_plans_with_status_badges(self):
+        other_user = get_user_model().objects.create_user(
+            username='other-plan-user',
+            password='test-password',
+        )
+
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        exercise_plan_product = Product.objects.create(
+            name='Strength Builder',
+            description='Exercise plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('29.99'),
+        )
+        exercise_plan = Plan.objects.create(product=exercise_plan_product)
+
+        other_exercise_plan_product = Product.objects.create(
+            name='Other Exercise',
+            description='Another exercise plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('15.99'),
+        )
+        other_exercise_plan = Plan.objects.create(product=other_exercise_plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_active',
+            stripe_customer_id='cus_active',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_active_nutrition',
+        )
+
+        past_due_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_past_due',
+            stripe_customer_id='cus_past_due',
+            status=Subscription.Status.PAST_DUE,
+            current_period_end=timezone.now() + timedelta(days=7),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=past_due_subscription,
+            plan=exercise_plan,
+            stripe_subscription_item_id='si_past_due_exercise',
+        )
+
+        canceled_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_canceled',
+            stripe_customer_id='cus_canceled',
+            status=Subscription.Status.CANCELED,
+            current_period_end=timezone.now() - timedelta(days=1),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=canceled_subscription,
+            plan=exercise_plan,
+            stripe_subscription_item_id='si_canceled_exercise',
+        )
+
+        other_subscription = Subscription.objects.create(
+            user=other_user,
+            stripe_subscription_id='sub_other',
+            stripe_customer_id='cus_other',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=other_subscription,
+            plan=other_exercise_plan,
+            stripe_subscription_item_id='si_other_exercise',
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nutrition plans')
+        self.assertContains(response, 'Exercise plans')
+        self.assertContains(response, 'Balanced Nutrition')
+        self.assertContains(response, 'Strength Builder')
+        self.assertContains(response, 'Active')
+        self.assertContains(response, 'Past due')
+        self.assertContains(response, 'Canceled')
+        self.assertContains(response, 'class="badge bg-success"')
+        self.assertContains(response, 'class="badge bg-warning text-dark"')
+        self.assertContains(response, 'class="badge bg-secondary"')
+        self.assertNotContains(response, 'Other Exercise')
