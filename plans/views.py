@@ -129,7 +129,10 @@ def home(request):
 @login_required
 def detail(request, pk):
     plan = get_object_or_404(
-        Plan.objects.select_related('product').prefetch_related('subscriptions__subscription'),
+        Plan.objects.select_related('product').prefetch_related(
+            'subscriptions__subscription',
+            'events__linked_products',
+        ),
         pk=pk,
     )
 
@@ -146,6 +149,16 @@ def detail(request, pk):
             'badge_class': _subscription_badge_class(subscription.status),
         })
 
+    recommended_products = []
+    seen_product_ids = set()
+    for event in plan.events.all():
+        for product in event.linked_products.all():
+            if product.id in seen_product_ids:
+                continue
+            seen_product_ids.add(product.id)
+            recommended_products.append(product)
+    recommended_products.sort(key=lambda product: product.name)
+
     return render(
         request,
         'plans/plan_detail.html',
@@ -153,5 +166,6 @@ def detail(request, pk):
             'plan': plan,
             'subscriptions': subscriptions,
             'has_plan_access': has_plan_access,
+            'recommended_products': recommended_products,
         },
     )

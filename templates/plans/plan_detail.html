@@ -16,6 +16,19 @@
     </div>
   </div>
 
+  {% if recommended_products %}
+    <div class="mt-4">
+      <h2 class="h5">Recommended products</h2>
+      <div class="row flex-nowrap overflow-auto g-3 pb-2">
+        {% for product in recommended_products %}
+          <div class="col-10 col-sm-6 col-lg-3 flex-shrink-0">
+            {% include "ecommerce/product_card.html" with product=product %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
   <div class="mt-4">
     {% if has_plan_access %}
       <h2 class="h5">Schedule</h2>

@@ -539,6 +539,79 @@ class PlansHomeViewTests(TestCase):
         self.assertContains(response, 'class="badge bg-warning text-dark"')
         self.assertContains(response, 'data-plan-calendar')
 
+    def test_plan_detail_lists_distinct_recommended_products(self):
+        plan_product = Product.objects.create(
+            name='Performance Plan',
+            description='Performance plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('29.99'),
+        )
+        plan = Plan.objects.create(product=plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_detail_recommended',
+            stripe_customer_id='cus_detail_recommended',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=plan,
+            stripe_subscription_item_id='si_detail_recommended',
+        )
+
+        protein = Product.objects.create(
+            name='Protein Blend Powder',
+            description='Protein powder',
+            product_type=Product.ProductType.NUTRITION_PRODUCT,
+            price=Decimal('24.99'),
+            stock=10,
+        )
+        mat = Product.objects.create(
+            name='Yoga Mat Pro',
+            description='Exercise mat',
+            product_type=Product.ProductType.EXERCISE_PRODUCT,
+            price=Decimal('39.99'),
+            stock=7,
+        )
+        bands = Product.objects.create(
+            name='Resistance Bands Set',
+            description='Bands set',
+            product_type=Product.ProductType.EXERCISE_PRODUCT,
+            price=Decimal('19.99'),
+            stock=5,
+        )
+
+        first_event = PlanEvent.objects.create(
+            plan=plan,
+            title='Strength workout',
+            instructions='Lift weights',
+            start_offset_days=1,
+            duration_days=1,
+        )
+        first_event.linked_products.set([protein, mat, protein])
+
+        second_event = PlanEvent.objects.create(
+            plan=plan,
+            title='Mobility workout',
+            instructions='Stretch',
+            start_offset_days=2,
+            duration_days=1,
+        )
+        second_event.linked_products.set([mat, bands])
+
+        self.client.force_login(self.user)
+
+        response = self.client.get(f'/plans/{plan.pk}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Recommended products')
+        self.assertContains(response, 'Protein Blend Powder')
+        self.assertContains(response, 'Yoga Mat Pro')
+        self.assertContains(response, 'Resistance Bands Set')
+        self.assertContains(response, 'class="row flex-nowrap overflow-auto g-3 pb-2"')
+
     def test_plan_detail_hides_calendar_without_active_subscription(self):
         plan_product = Product.objects.create(
             name='Inactive Plan',
