@@ -1,8 +1,10 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.db import transaction
+from django.shortcuts import get_object_or_404, redirect, render
 
 from ecommerce.models import Product
-from plans.models import Plan
+from plans.models import Plan, UserPlanSelection
 from subscriptions.models import SubscriptionPlan
 
 
@@ -42,6 +44,7 @@ def home(request):
         Product.ProductType.NUTRITION_PLAN: {},
         Product.ProductType.EXERCISE_PLAN: {},
     }
+    all_user_plans = []
 
     for subscription_plan in subscription_plans:
         product_type = subscription_plan.plan.product.product_type
@@ -49,22 +52,65 @@ def home(request):
             continue
 
         plan = subscription_plan.plan
+        all_user_plans.append(plan)
         grouped_plans[product_type].setdefault(plan.id, {
             'plan': plan,
             'subscriptions': [],
         })
         grouped_plans[product_type][plan.id]['subscriptions'].append(subscription_plan.subscription)
 
+    plan_status_by_id = {}
+    for product_type, plans_by_id in grouped_plans.items():
+        for plan_data in plans_by_id.values():
+            plan = plan_data['plan']
+            status_data = _plan_status_from_subscriptions(plan_data['subscriptions'])
+            plan_status_by_id[plan.id] = status_data['status']
+
+    if request.method == 'POST':
+        selected_plan_ids = {int(value) for value in request.POST.getlist('selected_plans') if value}
+        with transaction.atomic():
+            for plan in all_user_plans:
+                is_active = plan_status_by_id.get(plan.id, 'inactive') == 'active'
+                selection, _ = UserPlanSelection.objects.get_or_create(
+                    user=request.user,
+                    plan=plan,
+                )
+                selection.is_selected = is_active and plan.id in selected_plan_ids
+                selection.save(update_fields=['is_selected'])
+
+        messages.success(request, 'Your plan selections were updated.')
+        return redirect('plans:plans_home')
+
+    selection_map = {
+        selection.plan_id: selection.is_selected
+        for selection in UserPlanSelection.objects.filter(
+            user=request.user,
+            plan_id__in=[plan.id for plan in all_user_plans],
+        )
+    }
+    for plan_id, is_selected in list(selection_map.items()):
+        if plan_status_by_id.get(plan_id, 'inactive') != 'active' and is_selected:
+            UserPlanSelection.objects.filter(user=request.user, plan_id=plan_id).update(is_selected=False)
+            selection_map[plan_id] = False
+
     plan_sections = []
+    selected_plan_ids = set()
     for product_type, plans_by_id in grouped_plans.items():
         plans = []
         for plan_data in plans_by_id.values():
+            plan = plan_data['plan']
             status_data = _plan_status_from_subscriptions(plan_data['subscriptions'])
+            is_active = status_data['status'] == 'active'
+            is_selected = is_active and selection_map.get(plan.id, False)
+            if is_selected:
+                selected_plan_ids.add(plan.id)
             plans.append({
-                'plan': plan_data['plan'],
+                'plan': plan,
                 'status': status_data['status'],
                 'status_label': status_data['status_label'],
                 'badge_class': status_data['badge_class'],
+                'is_selected': is_selected,
+                'is_active': is_active,
             })
 
         plan_sections.append({
@@ -72,7 +118,12 @@ def home(request):
             'plans': sorted(plans, key=lambda item: item['plan'].product.name),
         })
 
-    return render(request, 'plans/home.html', {'plan_sections': plan_sections})
+    selected_plans = Plan.objects.filter(pk__in=selected_plan_ids).prefetch_related('events').select_related('product')
+
+    return render(request, 'plans/home.html', {
+        'plan_sections': plan_sections,
+        'selected_plans': selected_plans,
+    })
 
 
 @login_required

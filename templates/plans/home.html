@@ -1,25 +1,59 @@
 {% extends "base.html" %}
+{% load plan_calendar %}
 {% block title %}Plans - Health Hub{% endblock %}
 
 {% block content %}
 <h1>Plans</h1>
 
-{% for section in plan_sections %}
-  <div class="mt-4">
-    <h2>{{ section.title }}</h2>
+<form method="post" data-plan-selection-form>
+  {% csrf_token %}
 
-    {% if section.plans %}
-      <ul class="list-group">
-        {% for item in section.plans %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <a href="{% url 'plans:plan_detail' item.plan.pk %}">{{ item.plan.product.name }}</a>
-            <span class="{{ item.badge_class }}">{{ item.status_label }}</span>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-muted mb-0">No subscribed {{ section.title|lower }}.</p>
-    {% endif %}
-  </div>
-{% endfor %}
+  {% for section in plan_sections %}
+    <div class="mt-4">
+      <h2>{{ section.title }}</h2>
+
+      {% if section.plans %}
+        <ul class="list-group">
+          {% for item in section.plans %}
+            <li class="list-group-item">
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <input
+                    class="form-check-input me-3"
+                    type="checkbox"
+                    name="selected_plans"
+                    value="{{ item.plan.pk }}"
+                    id="plan-{{ item.plan.pk }}"
+                    {% if item.is_selected %}checked{% endif %}
+                    {% if not item.is_active %}disabled{% endif %}
+                    aria-label="Mark as current"
+                  >
+                  <label for="plan-{{ item.plan.pk }}" class="d-flex align-items-center justify-content-between flex-grow-1 mb-0">
+                    <span><a href="{% url 'plans:plan_detail' item.plan.pk %}">{{ item.plan.product.name }}</a></span>
+                    <span class="{{ item.badge_class }}">{{ item.status_label }}</span>
+                  </label>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted mb-0">No subscribed {{ section.title|lower }}.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+</form>
+
+<div class="mt-5">
+  <h2>Selected plan calendar</h2>
+  {% plan_calendar selected_plans %}
+</div>
+
+<script>
+  document.querySelectorAll('[data-plan-selection-form]').forEach((form) => {
+    form.querySelectorAll('input[name="selected_plans"]').forEach((checkbox) => {
+      checkbox.addEventListener('change', () => form.submit());
+    });
+  });
+</script>
 {% endblock %}

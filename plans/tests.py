@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from ecommerce.models import Product
 from subscriptions.models import Subscription, SubscriptionPlan
-from .models import Plan, PlanEvent
+from .models import Plan, PlanEvent, UserPlanSelection
 from .templatetags.plan_calendar import _calendar_events
 
 
@@ -331,6 +331,116 @@ class PlansHomeViewTests(TestCase):
         self.assertContains(response, 'class="badge bg-secondary"')
         self.assertEqual(response_html.count('Strength Builder'), 1)
         self.assertNotContains(response, 'Other Exercise')
+
+    def test_plans_home_renders_calendar_even_when_no_plan_is_current(self):
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_empty_calendar',
+            stripe_customer_id='cus_empty_calendar',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_empty_calendar',
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Selected plan calendar')
+        self.assertContains(response, 'data-plan-calendar')
+
+    def test_inactive_plan_is_never_marked_current(self):
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        inactive_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_inactive_never_current',
+            stripe_customer_id='cus_inactive_never_current',
+            status=Subscription.Status.CANCELED,
+            current_period_end=timezone.now() - timedelta(days=1),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=inactive_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_inactive_never_current',
+        )
+
+        UserPlanSelection.objects.create(user=self.user, plan=nutrition_plan, is_selected=True)
+
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'disabled')
+        self.assertNotContains(response, 'checked', html=False)
+        self.assertFalse(UserPlanSelection.objects.get(user=self.user, plan=nutrition_plan).is_selected)
+
+    def test_user_can_persist_current_plan_selection_from_plans_home(self):
+        nutrition_plan_product = Product.objects.create(
+            name='Balanced Nutrition',
+            description='Nutrition plan',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        nutrition_plan = Plan.objects.create(product=nutrition_plan_product)
+
+        exercise_plan_product = Product.objects.create(
+            name='Strength Builder',
+            description='Exercise plan',
+            product_type=Product.ProductType.EXERCISE_PLAN,
+            subscription_price=Decimal('29.99'),
+        )
+        exercise_plan = Plan.objects.create(product=exercise_plan_product)
+
+        active_subscription = Subscription.objects.create(
+            user=self.user,
+            stripe_subscription_id='sub_selection_active',
+            stripe_customer_id='cus_selection_active',
+            status=Subscription.Status.ACTIVE,
+            current_period_end=timezone.now() + timedelta(days=30),
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=nutrition_plan,
+            stripe_subscription_item_id='si_selection_nutrition',
+        )
+        SubscriptionPlan.objects.create(
+            subscription=active_subscription,
+            plan=exercise_plan,
+            stripe_subscription_item_id='si_selection_exercise',
+        )
+
+        self.client.force_login(self.user)
+
+        response = self.client.post('/plans/', {'selected_plans': [str(exercise_plan.pk)]})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(UserPlanSelection.objects.filter(user=self.user, plan=exercise_plan, is_selected=True).exists())
+        self.assertFalse(UserPlanSelection.objects.filter(user=self.user, plan=nutrition_plan, is_selected=True).exists())
+
+        response = self.client.get('/plans/')
+        self.assertContains(response, 'checked')
+        self.assertContains(response, 'data-plan-calendar')
 
     def test_authenticated_user_can_view_plan_detail_with_subscription_statuses(self):
         nutrition_plan_product = Product.objects.create(

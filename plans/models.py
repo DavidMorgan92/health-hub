@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -24,6 +25,32 @@ class Plan(models.Model):
 
     def __str__(self):
         return self.product.name
+
+
+class UserPlanSelection(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='plan_selections',
+    )
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.CASCADE,
+        related_name='user_selections',
+    )
+    is_selected = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'plan'],
+                name='unique_user_plan_selection',
+            ),
+        ]
+
+    def __str__(self):
+        status = 'selected' if self.is_selected else 'not selected'
+        return f'{self.user} - {self.plan}: {status}'
 
 
 class PlanEvent(models.Model):
