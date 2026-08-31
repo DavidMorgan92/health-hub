@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
@@ -10,6 +10,7 @@ from django.utils import timezone
 from ecommerce.models import Product
 from subscriptions.models import Subscription, SubscriptionPlan
 from .models import Plan, PlanEvent
+from .templatetags.plan_calendar import _calendar_events
 
 
 class PlanModelTests(TestCase):
@@ -81,6 +82,63 @@ class PlanModelTests(TestCase):
 
         with self.assertRaises(ValidationError):
             Plan(product=product).full_clean()
+
+    def test_calendar_events_expand_offsets_duration_and_recurrence(self):
+        PlanEvent.objects.create(
+            plan=self.plan,
+            title='Training block',
+            instructions='Train.',
+            start_offset_days=2,
+            duration_days=3,
+            recurrence_interval_days=4,
+            recurrence_count=2,
+        )
+
+        events = _calendar_events([self.plan], date(2026, 8, 31))
+
+        self.assertEqual([event['start'] for event in events], ['2026-09-02', '2026-09-06'])
+        self.assertEqual(events[0]['end'], '2026-09-05')
+
+    def test_calendar_events_limit_indefinite_recurrence_to_horizon(self):
+        PlanEvent.objects.create(
+            plan=self.plan,
+            title='Daily walk',
+            instructions='Walk.',
+            recurrence_interval_days=1,
+        )
+
+        events = _calendar_events([self.plan], date(2026, 8, 31))
+
+        self.assertEqual(len(events), 366)
+        self.assertEqual(events[-1]['start'], '2027-08-31')
+
+    def test_calendar_events_use_event_titles_and_repeat_plan_colors_by_index(self):
+        PlanEvent.objects.create(
+            plan=self.plan,
+            title='Warm up',
+            instructions='Walk.',
+        )
+        plans = [self.plan]
+        for plan_number in range(1, 11):
+            product = Product.objects.create(
+                name=f'Exercise plan {plan_number}',
+                description='A plan',
+                product_type=Product.ProductType.EXERCISE_PLAN,
+                subscription_price='9.99',
+            )
+            plan = Plan.objects.create(product=product)
+            PlanEvent.objects.create(
+                plan=plan,
+                title='Warm up',
+                instructions='Walk.',
+            )
+            plans.append(plan)
+
+        events = _calendar_events(plans, date(2026, 8, 31))
+
+        self.assertEqual(events[0]['title'], 'Warm up')
+        self.assertEqual(events[0]['color'], events[10]['color'])
+        self.assertNotEqual(events[0]['color'], events[1]['color'])
 
 
 class SeedPlansCommandTests(TestCase):

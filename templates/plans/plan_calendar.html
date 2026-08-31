@@ -1,0 +1,15 @@
+{% load static %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+<link rel="stylesheet" href="{% static 'plans/plan_calendar.css' %}">
+
+<div
+  id="{{ calendar_id }}"
+  class="plan-calendar"
+  data-plan-calendar
+  data-events-id="{{ events_id }}"
+>
+  {{ events|json_script:events_id }}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script src="{% static 'plans/plan_calendar.js' %}"></script>

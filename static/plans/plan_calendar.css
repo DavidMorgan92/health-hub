@@ -1,0 +1,7 @@
+.plan-calendar {
+  min-height: 520px;
+}
+
+.plan-calendar .fc-event {
+  cursor: pointer;
+}

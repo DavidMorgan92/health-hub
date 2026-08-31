@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load plan_calendar %}
 {% block title %}{{ plan.product.name }} - Plans{% endblock %}
 
 {% block content %}
@@ -13,6 +14,11 @@
       <p class="mb-0"><strong>Type:</strong> {{ plan.product.get_product_type_display }}</p>
       <p class="mb-0"><strong>Description:</strong> {{ plan.product.description }}</p>
     </div>
+  </div>
+
+  <div class="mt-4">
+    <h2 class="h5">Schedule</h2>
+    {% plan_calendar plan %}
   </div>
 
   <div class="mt-4">
