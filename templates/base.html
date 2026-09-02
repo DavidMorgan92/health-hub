@@ -84,8 +84,18 @@
     {% endblock %}
   </div>
 
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" aria-live="polite" aria-atomic="true">
+    <div id="basket-toast" class="toast" role="status" data-bs-delay="3000">
+      <div class="toast-header">
+        <strong class="me-auto">Basket updated</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body" id="basket-toast-message"></div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-  <script src="{% static 'ecommerce/cart.js' %}?v=6"></script>
+  <script src="{% static 'ecommerce/cart.js' %}?v=7"></script>
 </body>
 
 </html>

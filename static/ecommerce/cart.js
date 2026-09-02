@@ -17,6 +17,11 @@ document.querySelectorAll('[data-add-to-cart]').forEach((button) => {
       const badge = document.getElementById('cart-count-badge');
       badge.textContent = data.count;
       badge.classList.toggle('d-none', data.count === 0);
+
+      const toast = document.getElementById('basket-toast');
+      const toastMessage = document.getElementById('basket-toast-message');
+      toastMessage.textContent = 'Item added to your basket.';
+      bootstrap.Toast.getOrCreateInstance(toast).show();
     } catch (error) {
       window.alert(error.message);
     } finally {
