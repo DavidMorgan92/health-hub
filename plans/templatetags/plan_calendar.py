@@ -31,19 +31,19 @@ def _as_date(value):
 
 
 def _calendar_events(plans, start_date):
-    start_date = _as_date(start_date)
-    horizon = start_date + timedelta(days=CALENDAR_HORIZON_DAYS)
     if hasattr(plans, 'events'):
         plans = [plans]
     events = []
 
     for plan_index, plan in enumerate(plans):
+        plan_start_date = _as_date(getattr(plan, 'calendar_start_date', start_date))
+        horizon = plan_start_date + timedelta(days=CALENDAR_HORIZON_DAYS)
         plan_name = plan.product.name
         plan_color = PLAN_COLORS[plan_index % len(PLAN_COLORS)]
         for plan_event in plan.events.all():
             occurrence_number = 0
             while True:
-                occurrence_start = start_date + timedelta(
+                occurrence_start = plan_start_date + timedelta(
                     days=plan_event.start_offset_days
                     + occurrence_number * (plan_event.recurrence_interval_days or 0),
                 )

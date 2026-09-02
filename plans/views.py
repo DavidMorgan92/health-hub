@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from ecommerce.models import Product
 from plans.models import Plan, UserPlanSelection
@@ -68,6 +69,7 @@ def home(request):
 
     if request.method == 'POST':
         selected_plan_ids = {int(value) for value in request.POST.getlist('selected_plans') if value}
+        activation_time = timezone.now()
         with transaction.atomic():
             for plan in all_user_plans:
                 is_active = plan_status_by_id.get(plan.id, 'inactive') == 'active'
@@ -75,8 +77,14 @@ def home(request):
                     user=request.user,
                     plan=plan,
                 )
-                selection.is_selected = is_active and plan.id in selected_plan_ids
-                selection.save(update_fields=['is_selected'])
+                should_be_selected = is_active and plan.id in selected_plan_ids
+                update_fields = ['is_selected', 'activated_at']
+                if should_be_selected and not selection.is_selected:
+                    selection.activated_at = activation_time
+                elif not should_be_selected:
+                    selection.activated_at = None
+                selection.is_selected = should_be_selected
+                selection.save(update_fields=update_fields)
 
         messages.success(request, 'Your plan selections were updated.')
         return redirect('plans:plans_home')
@@ -90,7 +98,10 @@ def home(request):
     }
     for plan_id, is_selected in list(selection_map.items()):
         if plan_status_by_id.get(plan_id, 'inactive') != 'active' and is_selected:
-            UserPlanSelection.objects.filter(user=request.user, plan_id=plan_id).update(is_selected=False)
+            UserPlanSelection.objects.filter(user=request.user, plan_id=plan_id).update(
+                is_selected=False,
+                activated_at=None,
+            )
             selection_map[plan_id] = False
 
     plan_sections = []
@@ -118,7 +129,21 @@ def home(request):
             'plans': sorted(plans, key=lambda item: item['plan'].product.name),
         })
 
-    selected_plans = Plan.objects.filter(pk__in=selected_plan_ids).prefetch_related('events').select_related('product')
+    selected_plans = list(
+        Plan.objects.filter(pk__in=selected_plan_ids)
+        .prefetch_related('events')
+        .select_related('product')
+    )
+    activation_times = {
+        selection.plan_id: selection.activated_at
+        for selection in UserPlanSelection.objects.filter(
+            user=request.user,
+            plan_id__in=selected_plan_ids,
+            is_selected=True,
+        )
+    }
+    for plan in selected_plans:
+        plan.calendar_start_date = activation_times.get(plan.id)
 
     return render(request, 'plans/home.html', {
         'plan_sections': plan_sections,

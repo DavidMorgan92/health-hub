@@ -39,6 +39,7 @@ class UserPlanSelection(models.Model):
         related_name='user_selections',
     )
     is_selected = models.BooleanField(default=False)
+    activated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

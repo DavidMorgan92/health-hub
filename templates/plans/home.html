@@ -25,6 +25,7 @@
                     value="{{ item.plan.pk }}"
                     id="plan-{{ item.plan.pk }}"
                     {% if item.is_selected %}checked{% endif %}
+                    data-current-selected="{{ item.is_selected|yesno:'true,false' }}"
                     {% if not item.is_active %}disabled{% endif %}
                     aria-label="Mark as current"
                   >
@@ -53,6 +54,11 @@
   document.querySelectorAll('[data-plan-selection-form]').forEach((form) => {
     form.querySelectorAll('input[name="selected_plans"]').forEach((checkbox) => {
       checkbox.addEventListener('change', () => form.submit());
+      checkbox.addEventListener('click', (event) => {
+        if (checkbox.dataset.currentSelected !== 'true' || window.confirm('This will reset the plan. Do you want to continue?')) return;
+
+        event.preventDefault();
+      });
     });
   });
 </script>

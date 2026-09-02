@@ -140,6 +140,18 @@ class PlanModelTests(TestCase):
         self.assertEqual(events[0]['color'], events[10]['color'])
         self.assertNotEqual(events[0]['color'], events[1]['color'])
 
+    def test_calendar_events_use_a_plan_activation_date(self):
+        PlanEvent.objects.create(
+            plan=self.plan,
+            title='Warm up',
+            instructions='Walk.',
+        )
+        self.plan.calendar_start_date = date(2026, 9, 4)
+
+        events = _calendar_events([self.plan], date(2026, 8, 31))
+
+        self.assertEqual(events[0]['start'], '2026-09-04')
+
 
 class SeedPlansCommandTests(TestCase):
     def test_seed_creates_a_plan_for_every_seeded_plan_product(self):
@@ -466,12 +478,24 @@ class PlansHomeViewTests(TestCase):
         response = self.client.post('/plans/', {'selected_plans': [str(exercise_plan.pk)]})
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(UserPlanSelection.objects.filter(user=self.user, plan=exercise_plan, is_selected=True).exists())
+        selection = UserPlanSelection.objects.get(user=self.user, plan=exercise_plan)
+        self.assertTrue(selection.is_selected)
+        self.assertIsNotNone(selection.activated_at)
+        activated_at = selection.activated_at
         self.assertFalse(UserPlanSelection.objects.filter(user=self.user, plan=nutrition_plan, is_selected=True).exists())
 
         response = self.client.get('/plans/')
         self.assertContains(response, 'checked')
         self.assertContains(response, 'data-plan-calendar')
+
+        self.client.post('/plans/', {'selected_plans': [str(exercise_plan.pk)]})
+        selection.refresh_from_db()
+        self.assertEqual(selection.activated_at, activated_at)
+
+        self.client.post('/plans/', {})
+        selection.refresh_from_db()
+        self.assertFalse(selection.is_selected)
+        self.assertIsNone(selection.activated_at)
 
     def test_authenticated_user_can_view_plan_detail_with_subscription_statuses(self):
         nutrition_plan_product = Product.objects.create(
