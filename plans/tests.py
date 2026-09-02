@@ -487,6 +487,9 @@ class PlansHomeViewTests(TestCase):
         response = self.client.get('/plans/')
         self.assertContains(response, 'checked')
         self.assertContains(response, 'data-plan-calendar')
+        self.assertContains(response, 'data-plan-reset-modal')
+        self.assertContains(response, 'This will reset the plan schedule.')
+        self.assertNotContains(response, 'window.confirm')
 
         self.client.post('/plans/', {'selected_plans': [str(exercise_plan.pk)]})
         selection.refresh_from_db()

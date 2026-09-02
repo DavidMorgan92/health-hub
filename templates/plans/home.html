@@ -45,20 +45,61 @@
   {% endfor %}
 </form>
 
+<div class="modal fade" id="plan-reset-confirmation-modal" tabindex="-1" aria-labelledby="plan-reset-confirmation-title" aria-hidden="true" data-plan-reset-modal>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="plan-reset-confirmation-title">Reset current plan?</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        This will reset the plan schedule. Do you want to continue?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" data-plan-reset-confirm>Reset plan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="mt-5">
   <h2>Selected plan calendar</h2>
   {% plan_calendar selected_plans %}
 </div>
 
 <script>
-  document.querySelectorAll('[data-plan-selection-form]').forEach((form) => {
-    form.querySelectorAll('input[name="selected_plans"]').forEach((checkbox) => {
-      checkbox.addEventListener('change', () => form.submit());
-      checkbox.addEventListener('click', (event) => {
-        if (checkbox.dataset.currentSelected !== 'true' || window.confirm('This will reset the plan. Do you want to continue?')) return;
+  document.addEventListener('DOMContentLoaded', () => {
+    const resetModalElement = document.querySelector('[data-plan-reset-modal]');
+    const resetModal = bootstrap.Modal.getOrCreateInstance(resetModalElement);
+    const confirmResetButton = resetModalElement.querySelector('[data-plan-reset-confirm]');
+    let pendingResetCheckbox = null;
 
-        event.preventDefault();
+    document.querySelectorAll('[data-plan-selection-form]').forEach((form) => {
+      form.querySelectorAll('input[name="selected_plans"]').forEach((checkbox) => {
+        checkbox.addEventListener('change', () => form.submit());
+        checkbox.addEventListener('click', (event) => {
+          if (checkbox.dataset.currentSelected !== 'true') return;
+
+          event.preventDefault();
+          pendingResetCheckbox = checkbox;
+          resetModal.show();
+        });
       });
+    });
+
+    confirmResetButton.addEventListener('click', () => {
+      if (!pendingResetCheckbox) return;
+
+      const checkbox = pendingResetCheckbox;
+      checkbox.dataset.currentSelected = 'false';
+      pendingResetCheckbox = null;
+      resetModal.hide();
+      checkbox.click();
+    });
+
+    resetModalElement.addEventListener('hidden.bs.modal', () => {
+      pendingResetCheckbox = null;
     });
   });
 </script>
