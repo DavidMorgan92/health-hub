@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.urls import reverse
 from subscriptions.services import record_checkout_session
 from .cart import get_cart, get_cart_count, get_cart_items
-from .models import Product
+from .models import Order, OrderItem, Product
 
 
 def _calculate_cart_total(cart_items):
@@ -20,6 +20,14 @@ def _calculate_cart_total(cart_items):
             else item['product'].price
         ) * item['quantity']
         for item in cart_items
+    ) if cart_items else Decimal('0')
+
+
+def _calculate_product_total(cart_items):
+    return sum(
+        item['product'].price * item['quantity']
+        for item in cart_items
+        if not item['product'].is_plan
     ) if cart_items else Decimal('0')
 
 
@@ -111,8 +119,23 @@ def checkout(request):
         return redirect('ecommerce:cart_detail')
     if any(item['product'].is_plan for item in cart_items) and not request.user.is_authenticated:
         return redirect('ecommerce:checkout_auth')
+    has_physical_products = any(not item['product'].is_plan for item in cart_items)
 
     if request.method == 'POST':
+        delivery_address = request.POST.get('delivery_address', '').strip()
+        if has_physical_products and not delivery_address:
+            messages.error(request, 'Enter a delivery address before continuing to Stripe.')
+            return render(
+                request,
+                'ecommerce/checkout.html',
+                {
+                    'cart_items': cart_items,
+                    'cart_total': _calculate_cart_total(cart_items),
+                    'has_physical_products': has_physical_products,
+                    'delivery_address': delivery_address,
+                },
+            )
+
         for item in cart_items:
             if not item['product'].is_plan and item['quantity'] > item['product'].stock:
                 messages.error(
@@ -129,6 +152,8 @@ def checkout(request):
                 {
                     'cart_items': cart_items,
                     'cart_total': _calculate_cart_total(cart_items),
+                    'has_physical_products': has_physical_products,
+                    'delivery_address': delivery_address,
                 },
             )
 
@@ -181,6 +206,24 @@ def checkout(request):
             session_data['customer_email'] = request.user.email
 
         session = stripe.checkout.Session.create(**session_data)
+        if has_physical_products:
+            order = Order.objects.create(
+                user=request.user if request.user.is_authenticated else None,
+                stripe_checkout_session_id=session.id,
+                delivery_address=delivery_address,
+                total=_calculate_product_total(cart_items),
+            )
+            OrderItem.objects.bulk_create([
+                OrderItem(
+                    order=order,
+                    product=item['product'],
+                    product_name=item['product'].name,
+                    quantity=item['quantity'],
+                    unit_price=item['product'].price,
+                )
+                for item in cart_items
+                if not item['product'].is_plan
+            ])
         request.session['stripe_checkout_session_id'] = session.id
         request.session.modified = True
         return redirect(session.url)
@@ -191,6 +234,7 @@ def checkout(request):
         {
             'cart_items': cart_items,
             'cart_total': _calculate_cart_total(cart_items),
+            'has_physical_products': has_physical_products,
         },
     )
 
@@ -211,6 +255,9 @@ def checkout_success(request):
 
     if isinstance(session.get('subscription'), str):
         record_checkout_session(session)
+    Order.objects.filter(
+        stripe_checkout_session_id=session_id,
+    ).update(status=Order.Status.PAID)
 
     request.session['cart'] = {}
     request.session.pop('stripe_checkout_session_id', None)

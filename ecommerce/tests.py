@@ -7,7 +7,7 @@ from django.test import SimpleTestCase, TestCase
 from django.test import override_settings
 from unittest.mock import patch
 
-from .models import Product
+from .models import Order, Product
 
 
 class ProductTests(TestCase):
@@ -335,6 +335,99 @@ class CartViewTests(TestCase):
         self.assertContains(response, 'Checkout total')
         self.assertContains(response, '£12.50')
 
+    def test_product_checkout_requires_delivery_address(self):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.get('/store/checkout/')
+
+        self.assertContains(response, 'name="delivery_address"', html=False)
+        self.assertContains(response, 'id="delivery-address"', html=False)
+        self.assertContains(
+            response,
+            '<script src="/static/ecommerce/checkout.js?v=1"></script>',
+            html=False,
+        )
+        self.assertContains(response, 'Pay securely with Stripe')
+        self.assertContains(response, 'disabled', html=False)
+
+    def test_plan_only_checkout_does_not_require_delivery_address(self):
+        user = get_user_model().objects.create_user(
+            username='plan-only-buyer',
+            password='test-password',
+        )
+        self.client.force_login(user)
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(plan.id): 1}
+        session.save()
+
+        response = self.client.get('/store/checkout/')
+
+        self.assertNotContains(response, 'name="delivery_address"', html=False)
+        self.assertNotContains(response, 'disabled', html=False)
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.create')
+    def test_product_checkout_rejects_missing_delivery_address(self, create_session):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+
+        response = self.client.post('/store/checkout/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Enter a delivery address before continuing to Stripe.')
+        create_session.assert_not_called()
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.create')
+    def test_product_checkout_persists_order_delivery_address(self, create_session):
+        self.client.post(f'/store/cart/add/{self.product.id}/')
+        create_session.return_value.url = 'https://checkout.stripe.com/session'
+        create_session.return_value.id = 'cs_order_example'
+
+        self.client.post(
+            '/store/checkout/',
+            {'delivery_address': '12 Health Street, London, W1A 1AA'},
+        )
+
+        order = Order.objects.get(stripe_checkout_session_id='cs_order_example')
+        self.assertEqual(order.delivery_address, '12 Health Street, London, W1A 1AA')
+        self.assertEqual(order.total, Decimal('12.50'))
+        self.assertEqual(order.items.get().product, self.product)
+
+    @override_settings(STRIPE_SECRET_KEY='sk_test_example')
+    @patch('ecommerce.views.stripe.checkout.Session.create')
+    def test_mixed_checkout_order_total_excludes_plan_price(self, create_session):
+        user = get_user_model().objects.create_user(
+            username='mixed-buyer',
+            password='test-password',
+        )
+        self.client.force_login(user)
+        plan = Product.objects.create(
+            name='Beginner Nutrition Plan',
+            description='A four-week nutrition plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('19.99'),
+        )
+        session = self.client.session
+        session['cart'] = {str(self.product.id): 1, str(plan.id): 1}
+        session.save()
+        create_session.return_value.url = 'https://checkout.stripe.com/session'
+        create_session.return_value.id = 'cs_mixed_example'
+
+        self.client.post(
+            '/store/checkout/',
+            {'delivery_address': '12 Health Street, London, W1A 1AA'},
+        )
+
+        order = Order.objects.get(stripe_checkout_session_id='cs_mixed_example')
+        self.assertEqual(order.total, Decimal('12.50'))
+        self.assertEqual(order.items.count(), 1)
+
     def test_anonymous_plan_checkout_requires_an_account_step(self):
         plan = Product.objects.create(
             name='Beginner Nutrition Plan',
@@ -423,7 +516,10 @@ class CartViewTests(TestCase):
         create_session.return_value.url = 'https://checkout.stripe.com/session'
         create_session.return_value.id = 'cs_test_example'
 
-        response = self.client.post('/store/checkout/')
+        response = self.client.post(
+            '/store/checkout/',
+            {'delivery_address': '12 Health Street, London, W1A 1AA'},
+        )
 
         self.assertRedirects(response, 'https://checkout.stripe.com/session', fetch_redirect_response=False)
         self.assertEqual(create_session.call_args.kwargs['mode'], 'payment')

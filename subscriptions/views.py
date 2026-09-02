@@ -3,6 +3,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from ecommerce.models import Order
 from .services import record_checkout_session, sync_stripe_subscription
 
 
@@ -24,6 +25,9 @@ def stripe_webhook(request):
     event_type = event['type']
     event_data = event['data']['object']
     if event_type == 'checkout.session.completed':
+        Order.objects.filter(
+            stripe_checkout_session_id=event_data.get('id'),
+        ).update(status=Order.Status.PAID)
         record_checkout_session(event_data)
     elif event_type in {
         'customer.subscription.created',

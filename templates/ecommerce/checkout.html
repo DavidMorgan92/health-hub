@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load ecommerce_tags %}
 {% block title %}Checkout - Health Hub{% endblock %}
 
@@ -19,8 +20,28 @@
     </div>
     <form method="post">
       {% csrf_token %}
-      <button type="submit" class="btn btn-primary">Pay securely with Stripe</button>
+      {% if has_physical_products %}
+        <div class="mb-3">
+          <label for="delivery-address" class="form-label">Delivery address</label>
+          <textarea
+            id="delivery-address"
+            name="delivery_address"
+            class="form-control"
+            rows="4"
+            maxlength="500"
+            required
+          >{{ delivery_address }}</textarea>
+        </div>
+      {% endif %}
+      <button
+        type="submit"
+        class="btn btn-primary"
+        {% if has_physical_products and not delivery_address %}disabled{% endif %}
+      >Pay securely with Stripe</button>
       <a href="{% url 'ecommerce:cart_detail' %}" class="btn btn-link">Return to cart</a>
     </form>
   </div>
+  {% if has_physical_products %}
+    <script src="{% static 'ecommerce/checkout.js' %}?v=1"></script>
+  {% endif %}
 {% endblock %}
