@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db.models import Q
 from django.urls import reverse
-from subscriptions.services import record_checkout_session
+from subscriptions.services import record_checkout_session, sync_stripe_subscription
 from .cart import get_cart, get_cart_count, get_cart_items
 from .models import Order, OrderItem, Product
 
@@ -255,6 +255,9 @@ def checkout_success(request):
 
     if isinstance(session.get('subscription'), str):
         record_checkout_session(session)
+        sync_stripe_subscription(
+            stripe.Subscription.retrieve(session['subscription']),
+        )
     Order.objects.filter(
         stripe_checkout_session_id=session_id,
     ).update(status=Order.Status.PAID)

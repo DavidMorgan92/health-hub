@@ -28,7 +28,11 @@ def stripe_webhook(request):
         Order.objects.filter(
             stripe_checkout_session_id=event_data.get('id'),
         ).update(status=Order.Status.PAID)
-        record_checkout_session(event_data)
+        subscription = record_checkout_session(event_data)
+        if subscription:
+            sync_stripe_subscription(
+                stripe.Subscription.retrieve(subscription.stripe_subscription_id),
+            )
     elif event_type in {
         'customer.subscription.created',
         'customer.subscription.updated',

@@ -77,7 +77,12 @@ class StripeWebhookTests(TestCase):
 
     @override_settings(STRIPE_WEBHOOK_SECRET='whsec_test')
     @patch('subscriptions.views.stripe.Webhook.construct_event')
-    def test_subscription_webhook_tracks_plan_access_and_cancellation(self, construct_event):
+    @patch('subscriptions.views.stripe.Subscription.retrieve')
+    def test_subscription_webhook_tracks_plan_access_and_cancellation(
+        self,
+        retrieve_subscription,
+        construct_event,
+    ):
         period_end = int((timezone.now() + timedelta(days=30)).timestamp())
         construct_event.return_value = {
             'type': 'customer.subscription.created',
@@ -97,6 +102,7 @@ class StripeWebhookTests(TestCase):
                 },
             },
         }
+        retrieve_subscription.return_value = construct_event.return_value['data']['object']
 
         response = self.client.post(
             '/subscriptions/stripe/webhook/',
@@ -125,6 +131,51 @@ class StripeWebhookTests(TestCase):
 
         subscription.refresh_from_db()
         self.assertFalse(subscription.grants_access)
+
+    @override_settings(STRIPE_WEBHOOK_SECRET='whsec_test')
+    @patch('subscriptions.views.stripe.Webhook.construct_event')
+    @patch('subscriptions.views.stripe.Subscription.retrieve')
+    def test_checkout_completion_syncs_subscription_after_initial_incomplete_event(
+        self,
+        retrieve_subscription,
+        construct_event,
+    ):
+        active_subscription = {
+            'id': 'sub_checkout_sync',
+            'customer': 'cus_checkout_sync',
+            'status': 'active',
+            'current_period_start': int(timezone.now().timestamp()),
+            'current_period_end': int((timezone.now() + timedelta(days=30)).timestamp()),
+            'metadata': {
+                'user_id': str(self.user.id),
+                'plan_product_ids': str(self.plan.product_id),
+            },
+            'items': {'data': [{'id': 'si_checkout_sync'}]},
+        }
+        construct_event.return_value = {
+            'type': 'checkout.session.completed',
+            'data': {
+                'object': {
+                    'id': 'cs_checkout_sync',
+                    'subscription': 'sub_checkout_sync',
+                    'customer': 'cus_checkout_sync',
+                    'client_reference_id': str(self.user.id),
+                },
+            },
+        }
+        retrieve_subscription.return_value = active_subscription
+
+        response = self.client.post(
+            '/subscriptions/stripe/webhook/',
+            b'event-payload',
+            HTTP_STRIPE_SIGNATURE='signature',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        subscription = Subscription.objects.get(stripe_subscription_id='sub_checkout_sync')
+        self.assertEqual(subscription.status, Subscription.Status.ACTIVE)
+        self.assertTrue(subscription.grants_access)
 
     def test_checkout_session_does_not_overwrite_active_subscription(self):
         period_end = timezone.now() + timedelta(days=30)
