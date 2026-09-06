@@ -40,6 +40,8 @@
   <p>The user is presented with a button to continue to pay with Stripe where they will be redirected to a Stripe page, and a link to go back to the cart to make adjustments.</p>
   <p>If the user navigates to the checkout page and there are no items in the cart, the user will be redirected to the cart page.</p>
   <img src="ecommerce/checkout.png">
+  <p>If the cart contains product type products (as opposed to plans) then a delivery address is required, so an input is shown for that, and is required to continue to pay.</p>
+  <img src="ecommerce/checkout-products.png">
 </details>
 
 <details>
