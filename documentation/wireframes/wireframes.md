@@ -55,3 +55,12 @@
   <p>On a cancelled payment the user will be shown a message informing them their cart is still ready to be purchased again, and a link to continue shopping in the store.</p>
   <img src="ecommerce/payment-cancelled.png">
 </details>
+
+## Plans
+
+<details>
+  <summary>Plans front page</summary>
+  <p>This page shows a user's plans and their states, and allows the user to choose which ones are currently active.</p>
+  <p>It also shows a calendar which shows the events in each selected plan.</p>
+  <img src="plans/plans-front-page.png">
+</details>
