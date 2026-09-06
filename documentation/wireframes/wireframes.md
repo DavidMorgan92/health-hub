@@ -29,6 +29,12 @@
 </details>
 
 <details>
+  <summary>Checkout login</summary>
+  <p>When the user is attempting to check out with plan type products and is unauthenticated, they must be authenticated so the plans can be associated with an account. This page will be displayed in that case to require the user to either login or create an account and then they will be redirected to the checkout page.</p>
+  <img src="ecommerce/checkout-login.png">
+</details>
+
+<details>
   <summary>Checkout</summary>
   <p>The checkout shows a simple list of the items and prices about to be purchased, and a total.</p>
   <p>The user is presented with a button to continue to pay with Stripe where they will be redirected to a Stripe page, and a link to go back to the cart to make adjustments.</p>
