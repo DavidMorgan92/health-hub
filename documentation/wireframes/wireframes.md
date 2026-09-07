@@ -62,5 +62,9 @@
   <summary>Plans front page</summary>
   <p>This page shows a user's plans and their states, and allows the user to choose which ones are currently active.</p>
   <p>It also shows a calendar which shows the events in each selected plan.</p>
+  <p>This is how it will appear whent he user has no subscribed plans.</p>
   <img src="plans/plans-front-page.png">
+  <p>When the user has subscribed plans they will be shown.</p>
+  <p>The user can toggle plans as "current" or not with the checkboxes. When they are started they will be started on the current day. When a user is about to uncheck one, they will first be warned that this will reset their position within the plan, and must confirm their decision. Plans that are chosen will have their events shown in the calendar below. Each chosen plan will have its events shown in a unique colour. Clicking on an event will give more detail about it.</p>
+  <img src="plans/plans-front-page-with-plans.png">
 </details>
