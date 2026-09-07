@@ -66,5 +66,6 @@
   <img src="plans/plans-front-page.png">
   <p>When the user has subscribed plans they will be shown.</p>
   <p>The user can toggle plans as "current" or not with the checkboxes. When they are started they will be started on the current day. When a user is about to uncheck one, they will first be warned that this will reset their position within the plan, and must confirm their decision. Plans that are chosen will have their events shown in the calendar below. Each chosen plan will have its events shown in a unique colour. Clicking on an event will give more detail about it.</p>
+  <p>A plan can be shown as active or inactive, depending on whether it is paid for with a subscription. If it is inactive it will be unchecked and the user will be unable to check it. They would have to reactivate or being a new subscription with that plan.</p>
   <img src="plans/plans-front-page-with-plans.png">
 </details>
