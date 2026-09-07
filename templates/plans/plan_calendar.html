@@ -11,5 +11,24 @@
   {{ events|json_script:events_id }}
 </div>
 
+<div
+  class="modal fade"
+  id="{{ calendar_id }}-event-modal"
+  tabindex="-1"
+  aria-labelledby="{{ calendar_id }}-event-modal-title"
+  aria-hidden="true"
+  data-plan-event-modal
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title fs-5" id="{{ calendar_id }}-event-modal-title">Event instructions</h2>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" data-plan-event-instructions></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-<script src="{% static 'plans/plan_calendar.js' %}"></script>
+<script src="{% static 'plans/plan_calendar.js' %}?v=8"></script>
