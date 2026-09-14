@@ -1,5 +1,13 @@
 # Wireframes
 
+<details>
+  <summary>Home page</summary>
+  <p>When unauthenticated the user is greeted with a simple message.</p>
+  <img src="home-unauthenticated.png">
+  <p>When authenticated the user is greeted with the same message but also shown a calendar with their currently selected plans.</p>
+  <img src="home-authenticated.png">
+</details>
+
 ## Ecommerce
 
 <details>
