@@ -51,4 +51,4 @@ After provisioning storage, redeploy and upload the images again; files previous
 
 ## Testing
 
-Invoke `python manage.py test` at the project root to run the automated test suite.
+[Testing documentation](TESTING.md)
