@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'storages',
     'allauth',
     'allauth.account',
     'django_bootstrap5',
@@ -149,6 +150,30 @@ STORAGES = {
 }
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+AWS_STORAGE_BUCKET_NAME = (
+    os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    or os.environ.get('BUCKETEER_BUCKET_NAME')
+)
+if AWS_STORAGE_BUCKET_NAME:
+    AWS_ACCESS_KEY_ID = (
+        os.environ.get('AWS_ACCESS_KEY_ID')
+        or os.environ.get('BUCKETEER_AWS_ACCESS_KEY_ID')
+    )
+    AWS_SECRET_ACCESS_KEY = (
+        os.environ.get('AWS_SECRET_ACCESS_KEY')
+        or os.environ.get('BUCKETEER_AWS_SECRET_ACCESS_KEY')
+    )
+    AWS_S3_REGION_NAME = (
+        os.environ.get('AWS_S3_REGION_NAME')
+        or os.environ.get('BUCKETEER_AWS_REGION')
+    )
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN')
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
