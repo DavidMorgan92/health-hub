@@ -83,3 +83,25 @@
   <p>This page shows a subscribed plan's details. If it has recommended products they will be shown in a horizontally scrolling list similar to the store home page. If the user has access to the plan its events will appear in the calendar, otherwise the calendar will not be rendered and the user will be informed they must purchase a subscription. Any subscriptions by which the plan is purchased will be shown in a list, as well as their current state.</p>
   <img src="plans/plan-details.png">
 </details>
+
+## Account
+
+<details>
+  <summary>Login</summary>
+  <img src="account/login.png">
+</details>
+
+<details>
+  <summary>Forgot password</summary>
+  <img src="account/forgot-password.png">
+</details>
+
+<details>
+  <summary>Sign up</summary>
+  <img src="account/sign-up.png">
+</details>
+
+<details>
+  <summary>Logout</summary>
+  <img src="account/logout.png">
+</details>
