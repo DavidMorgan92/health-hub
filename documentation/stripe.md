@@ -55,5 +55,3 @@ Configure a Stripe webhook endpoint for `/subscriptions/stripe/webhook/` and use
 The application currently uses `gbp` as `STRIPE_CURRENCY`. Change that setting before deployment if the store should charge in another currency.
 
 The checkout page creates Stripe Checkout line items from the server-side cart. Plans use `subscription` mode with a recurring monthly price. One-time products use `payment` mode. If a cart contains both, Stripe uses subscription mode: the plan recurs monthly and the products are charged once on the initial invoice.
-
-The success and cancellation URLs are configured for the current request host. Fulfilment, stock reduction, and subscription state should be handled with a verified Stripe webhook before going live. Never fulfil an order based only on the browser redirect.
