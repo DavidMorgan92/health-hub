@@ -149,6 +149,27 @@ Then there are routes which should only be accessed by authenticated admin users
 <details>
   <summary>When cancelling a subscription from Stripe this should be reflected in the subscription information on the plan details page</summary>
   <p>I have found a bug here. I cancelled a subscription through the Stripe web interface, but it did not update in Health Hub. There must be an issue with the web hook endpoint.</p>
+  <p><a href="#cancelling-a-subscription-via-stripe-did-not-update-the-entity-in-the-database">The bug is documented here.</a> Upon investigation I found I had simply misconfigured the webhook endpoint. I have confirmed the behaviour is as expected.</p>
+</details>
+
+<details>
+  <summary>When a plan has no active subscriptions it should become inactive</summary>
+  <p>I have confirmed this behaviour.</p>
+</details>
+
+<details>
+  <summary>When a plan has at least one active subscription it should be active</summary>
+  <p>I have confirmed this behaviour.</p>
+</details>
+
+<details>
+  <summary>When a plan becomes inactive it should not be able to be selected</summary>
+  <p>I have confirmed this behaviour. I had a plan selected as current, then made its last active subscription inactive. The plan was no longer selected, and now the checkbox is disabled to prevent selecting it.</p>
+</details>
+
+<details>
+  <summary>When a plan is active it should be possible to select it as current</summary>
+  <p>I have confirmed this behaviour. An active subscription can be made "current" by checking its checkbox, which will make its events appear in the calendar starting from the current day.</p>
 </details>
 
 ### Bugs found
@@ -156,3 +177,5 @@ Then there are routes which should only be accessed by authenticated admin users
 #### Cancelling a subscription via Stripe did not update the entity in the database
 
 I suspect the webhook endpoint ignored the event, and should be updated to accept cancellation events and update the database entity.
+
+As it happens, I simply forgot to create a new webhook for the Heroku deployment, separate to the development webhook. After configuring this in both Stripe and Heroku, when I cancel a subscription in Stripe this is reflected in Health Hub.
