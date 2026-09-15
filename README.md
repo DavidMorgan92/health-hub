@@ -51,4 +51,4 @@ After provisioning storage, redeploy and upload the images again; files previous
 
 ## Testing
 
-[Testing documentation](TESTING.md)
+[Testing documentation](documentation/testing.md)
