@@ -40,6 +40,14 @@
             {% endif %}
         </ul>
         <ul class="navbar-nav ms-auto">
+          {% if user.is_staff %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Admin</a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'plans:create_plan' %}">Create plan</a></li>
+            </ul>
+          </li>
+          {% endif %}
           {% active_nav request 'cart_detail' as cart_active %}
           <li class="nav-item">
             <a class="nav-link {{ cart_active }}" href="{% url 'ecommerce:cart_detail' %}" alt="Cart" {% if cart_active %}aria-current="page"{% endif %}>

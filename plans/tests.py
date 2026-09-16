@@ -670,3 +670,44 @@ class PlansHomeViewTests(TestCase):
             'You must re-activate a subscription to regain access to this plan.',
         )
         self.assertNotContains(response, 'data-plan-calendar')
+
+
+class CreatePlanViewTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            username='create-plan-user',
+            password='test-password',
+        )
+
+    def test_create_plan_requires_staff_access(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/create/')
+
+        self.assertRedirects(response, '/admin/login/?next=/plans/create/')
+
+    def test_staff_user_can_view_create_plan_stub(self):
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/create/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<h1>Create plan</h1>', html=False)
+
+    def test_admin_nav_menu_is_only_visible_to_staff_users(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get('/plans/')
+
+        self.assertNotContains(response, '>Admin<', html=False)
+        self.assertNotContains(response, 'Create plan')
+
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+
+        response = self.client.get('/plans/')
+
+        self.assertContains(response, '>Admin<', html=False)
+        self.assertContains(response, 'href="/plans/create/"')

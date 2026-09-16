@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
@@ -149,6 +150,11 @@ def home(request):
         'plan_sections': plan_sections,
         'selected_plans': selected_plans,
     })
+
+
+@staff_member_required
+def create_plan(request):
+    return render(request, 'plans/create_plan.html')
 
 
 @login_required
