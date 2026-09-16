@@ -84,6 +84,12 @@
   <img src="plans/plan-details.png">
 </details>
 
+<details>
+  <summary>Create plan</summary>
+  <p>This page allows a staff user to create a plan product. They can create the events and see a preview calendar of how the plan will look.</p>
+  <img src="plans/create-plan.png">
+</details>
+
 ## Account
 
 <details>
