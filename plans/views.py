@@ -8,6 +8,7 @@ from django.utils import timezone
 from ecommerce.models import Product
 from plans.models import Plan, UserPlanSelection
 from subscriptions.models import SubscriptionPlan
+from .forms import PlanProductForm
 
 
 def _subscription_badge_class(status):
@@ -154,7 +155,15 @@ def home(request):
 
 @staff_member_required
 def create_plan(request):
-    return render(request, 'plans/create_plan.html')
+    form = PlanProductForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        with transaction.atomic():
+            product = form.save()
+            Plan.objects.create(product=product)
+        messages.success(request, 'Plan created successfully.')
+        return redirect('plans:create_plan')
+
+    return render(request, 'plans/create_plan.html', {'form': form})
 
 
 @login_required

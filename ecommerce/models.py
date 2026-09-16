@@ -10,7 +10,7 @@ class Product(models.Model):
         NUTRITION_PRODUCT = 'nutrition_product', 'Nutrition product'
         EXERCISE_PRODUCT = 'exercise_product', 'Exercise product'
 
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     description = models.TextField()
     product_type = models.CharField(
         max_length=20,

@@ -695,6 +695,68 @@ class CreatePlanViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<h1>Create plan</h1>', html=False)
+        self.assertContains(response, 'name="name"')
+        self.assertContains(response, 'name="description"')
+        self.assertContains(response, 'name="product_type"')
+        self.assertContains(response, 'name="subscription_price"')
+        self.assertContains(response, 'name="image"')
+
+    def test_staff_user_can_create_plan_product_and_plan_together(self):
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+        self.client.force_login(self.user)
+
+        response = self.client.post('/plans/create/', {
+            'name': 'Balanced Nutrition',
+            'description': 'A balanced nutrition plan.',
+            'product_type': Product.ProductType.NUTRITION_PLAN,
+            'subscription_price': '19.99',
+        })
+
+        self.assertRedirects(response, '/plans/create/')
+        product = Product.objects.get(name='Balanced Nutrition')
+        self.assertEqual(product.product_type, Product.ProductType.NUTRITION_PLAN)
+        self.assertEqual(product.subscription_price, Decimal('19.99'))
+        self.assertTrue(Plan.objects.filter(product=product).exists())
+
+    def test_invalid_create_plan_submission_creates_neither_record(self):
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+        self.client.force_login(self.user)
+
+        response = self.client.post('/plans/create/', {
+            'name': 'Missing price',
+            'description': 'An invalid plan.',
+            'product_type': Product.ProductType.EXERCISE_PLAN,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Plans must have a monthly subscription price.')
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(Plan.objects.count(), 0)
+
+    def test_duplicate_product_name_is_rejected(self):
+        Product.objects.create(
+            name='Existing Plan',
+            description='An existing plan.',
+            product_type=Product.ProductType.NUTRITION_PLAN,
+            subscription_price=Decimal('9.99'),
+        )
+        self.user.is_staff = True
+        self.user.save(update_fields=['is_staff'])
+        self.client.force_login(self.user)
+
+        response = self.client.post('/plans/create/', {
+            'name': 'Existing Plan',
+            'description': 'A duplicate plan.',
+            'product_type': Product.ProductType.EXERCISE_PLAN,
+            'subscription_price': '19.99',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'A product with this name already exists.')
+        self.assertEqual(Product.objects.count(), 1)
+        self.assertEqual(Plan.objects.count(), 0)
 
     def test_admin_nav_menu_is_only_visible_to_staff_users(self):
         self.client.force_login(self.user)
