@@ -52,3 +52,33 @@ After provisioning storage, redeploy and upload the images again; files previous
 ## Testing
 
 [Testing documentation](documentation/testing.md)
+
+## Further development
+
+### Plan creation/editing
+
+Currently it is not possible to associate recommended products with a plan when creating using the admin form.
+
+It is also not possible to edit existing plans via any custom form.
+
+There may also be other UX improvements.
+
+### Plan preview
+
+Currently, as a customer, it is not possible to see the content of a plan before purchase. Its events and recommended products can only be seen after purchasing a subscription.
+
+### Comments and ratings
+
+Currently there are not functions for rating or commenting on plans or products.
+
+### Managing subscriptions
+
+Currently there are no functions for cancelling or restarting subscriptions from within Health Hub.
+
+### Account functions
+
+Currently there are no functions for changing password as an authenticated user, deleting one's account, etc.
+
+### Email integration
+
+Currently the system is not integrated with a real email provider, meaning that account verification is not implemented.
