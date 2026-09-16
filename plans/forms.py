@@ -1,6 +1,7 @@
 from django import forms
 
 from ecommerce.models import Product
+from .models import PlanEvent
 
 
 class PlanProductForm(forms.ModelForm):
@@ -31,3 +32,31 @@ class PlanProductForm(forms.ModelForm):
         if Product.objects.filter(name=name).exists():
             raise forms.ValidationError('A product with this name already exists.')
         return name
+
+
+class PlanEventForm(forms.ModelForm):
+    class Meta:
+        model = PlanEvent
+        fields = [
+            'title',
+            'instructions',
+            'start_offset_days',
+            'duration_days',
+            'recurrence_interval_days',
+            'recurrence_count',
+        ]
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'instructions': forms.Textarea(attrs={'class': 'form-control', 'rows': 5}),
+            'start_offset_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'duration_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'recurrence_interval_days': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'recurrence_count': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['start_offset_days'].initial = 0
+        self.fields['duration_days'].initial = 1
+        self.fields['recurrence_interval_days'].required = False
+        self.fields['recurrence_count'].required = False

@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
@@ -6,9 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from ecommerce.models import Product
-from plans.models import Plan, UserPlanSelection
+from plans.models import Plan, PlanEvent, UserPlanSelection
 from subscriptions.models import SubscriptionPlan
-from .forms import PlanProductForm
+from .forms import PlanEventForm, PlanProductForm
 
 
 def _subscription_badge_class(status):
@@ -156,14 +158,56 @@ def home(request):
 @staff_member_required
 def create_plan(request):
     form = PlanProductForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
+    event_data = [{
+        'title': '',
+        'instructions': '',
+        'start_offset_days': 0,
+        'duration_days': 1,
+        'recurrence_interval_days': None,
+        'recurrence_count': None,
+    }]
+    event_forms = []
+    event_error = None
+
+    if request.method == 'POST':
+        try:
+            event_data = json.loads(request.POST.get('events', '[]'))
+        except json.JSONDecodeError:
+            event_data = []
+            event_error = 'The event data could not be read.'
+
+        if not isinstance(event_data, list):
+            event_data = []
+            event_error = 'The event data could not be read.'
+
+        for event in event_data:
+            event_form = PlanEventForm(event if isinstance(event, dict) else {})
+            event_forms.append(event_form)
+            if not event_form.is_valid() and event_error is None:
+                event_error = 'Check the event details before creating the plan.'
+
+        if not event_data and event_error is None:
+            event_error = 'Add at least one event before creating the plan.'
+
+    if (
+        request.method == 'POST'
+        and form.is_valid()
+        and event_error is None
+    ):
         with transaction.atomic():
             product = form.save()
-            Plan.objects.create(product=product)
+            plan = Plan.objects.create(product=product)
+            for event_form in event_forms:
+                PlanEvent.objects.create(plan=plan, **event_form.cleaned_data)
         messages.success(request, 'Plan created successfully.')
         return redirect('plans:create_plan')
 
-    return render(request, 'plans/create_plan.html', {'form': form})
+    return render(request, 'plans/create_plan.html', {
+        'form': form,
+        'event_data': event_data,
+        'event_forms': event_forms,
+        'event_error': event_error,
+    })
 
 
 @login_required

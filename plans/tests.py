@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from decimal import Decimal
+import json
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -711,13 +712,25 @@ class CreatePlanViewTests(TestCase):
             'description': 'A balanced nutrition plan.',
             'product_type': Product.ProductType.NUTRITION_PLAN,
             'subscription_price': '19.99',
+            'events': json.dumps([{
+                'title': 'Meal preparation',
+                'instructions': 'Prepare meals for the week.',
+                'start_offset_days': 0,
+                'duration_days': 1,
+                'recurrence_interval_days': 7,
+                'recurrence_count': 4,
+            }]),
         })
 
         self.assertRedirects(response, '/plans/create/')
         product = Product.objects.get(name='Balanced Nutrition')
         self.assertEqual(product.product_type, Product.ProductType.NUTRITION_PLAN)
         self.assertEqual(product.subscription_price, Decimal('19.99'))
-        self.assertTrue(Plan.objects.filter(product=product).exists())
+        plan = Plan.objects.get(product=product)
+        event = plan.events.get()
+        self.assertEqual(event.title, 'Meal preparation')
+        self.assertEqual(event.recurrence_interval_days, 7)
+        self.assertEqual(event.recurrence_count, 4)
 
     def test_invalid_create_plan_submission_creates_neither_record(self):
         self.user.is_staff = True
