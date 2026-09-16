@@ -63,6 +63,12 @@ Then there are routes which should only be accessed by authenticated admin users
   <p>I have confirmed that when authenticated as a non-admin user I am required to authenticate as an admin user when accessing the /admin route.</p>
 </details>
 
+<details>
+  <summary>Create plan page</summary>
+  <p>This is the page for creating new plan products, and should only be available to staff users.</p>
+  <p>I have confirmed that the navbar "create plan" link is not visible to non-staff users, authenticated or not, and that when attempting to access the route I am challenged to provide staff user credentials.</p>
+</details>
+
 ### Ecommerce flow
 
 <details>
@@ -170,6 +176,11 @@ Then there are routes which should only be accessed by authenticated admin users
 <details>
   <summary>When a plan is active it should be possible to select it as current</summary>
   <p>I have confirmed this behaviour. An active subscription can be made "current" by checking its checkbox, which will make its events appear in the calendar starting from the current day.</p>
+</details>
+
+<details>
+  <summary>Create plan page works as expected</summary>
+  <p>I tested that I was able to create plan with an attached image, a set of events, and all required information input. I was able to purchase the plan as a non-staff user and it had the correct title, description and price, and the event information is all correct.</p>
 </details>
 
 ### Bugs found
